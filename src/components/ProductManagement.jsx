@@ -8,7 +8,7 @@ const KATEGORI_OBAT = [
   "Obat Resep",
   "Obat Bebas",
   "Vitamin & Suplemen",
-  "Perawatan Pribadi"
+  "Perawatan Pribadi",
 ];
 
 const ProductManagement = () => {
@@ -132,8 +132,15 @@ const ProductManagement = () => {
 
   return (
     <div className="p-4 max-w-6xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">Manajemen Produk Apotek</h1>
-
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold mb-6">Manajemen Produk Apotek</h1>
+        <a
+          href="/stok-opname"
+          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+        >
+          Stok Opname
+        </a>
+      </div>
       <h2 className="text-xl font-semibold mb-2">Tambah Obat Baru</h2>
       <form
         onSubmit={(e) => {
@@ -251,7 +258,6 @@ const ProductManagement = () => {
           Tambah Obat
         </button>
       </form>
-
       <table className="w-full border-collapse border border-gray-300">
         <thead className="bg-gray-100">
           <tr>
@@ -298,7 +304,6 @@ const ProductManagement = () => {
           ))}
         </tbody>
       </table>
-
       {editingProduct && (
         <div className="mt-6 p-4 bg-gray-100 rounded">
           <h2 className="text-xl font-semibold mb-2">

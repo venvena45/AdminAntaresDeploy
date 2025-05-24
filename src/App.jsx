@@ -4,6 +4,7 @@ import Dashboard from "./components/Dashboard";
 import ProductManagement from "./components/ProductManagement";
 import HalamanPesanan from "./components/HalamanPesanan";
 import ReportPenjualan from "./components/ReportPenjualan";
+import StockOpname from "./components/StockOpname";
 // import other components like Produk, Pesanan, etc if you have them
 
 function App() {
@@ -14,6 +15,7 @@ function App() {
         <Route path="/produk" element={<ProductManagement />} />
         <Route path="/pesanan" element={<HalamanPesanan />} />
         <Route path="/report" element={<ReportPenjualan/>} />
+        <Route path="/stok-opname" element={<StockOpname />} />
       </Routes>
     </Router>
   );
