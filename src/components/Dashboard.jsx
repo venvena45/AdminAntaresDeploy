@@ -147,13 +147,18 @@ const Dashboard = () => {
                 Report Penjualan
               </Link>
             </li>
-            <li className="cursor-pointer hover:underline">Pesan</li>
+
             <li>
               <Link to="/pengaturan" className="hover:underline">
                 Pengaturan
               </Link>
             </li>
-            <li className="cursor-pointer hover:underline">Keluar</li>
+            
+            <li>
+              <Link to="/keluar" className="hover:underline">
+                Keluar
+              </Link>
+            </li>
           </ul>
         </nav>
       </aside>
