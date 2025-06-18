@@ -1,6 +1,9 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function App() {
+    const navigate = useNavigate(); // Panggil useNavigate di dalam komponen
+
     return (
         <div className="min-h-screen flex flex-col justify-between bg-gray-200">
             {/* Header */}
@@ -16,7 +19,8 @@ export default function App() {
                         <button className="bg-blue-600 text-white px-4 py-2 rounded-md font-semibold hover:bg-blue-700">
                             Yakin
                         </button>
-                        <button className="bg-red-600 text-white px-4 py-2 rounded-md font-semibold hover:bg-red-700">
+                        <button onClick={() => navigate("/")}
+                            className="bg-red-600 text-white px-4 py-2 rounded-md font-semibold hover:bg-red-700">
                             Tidak
                         </button>
                     </div>
