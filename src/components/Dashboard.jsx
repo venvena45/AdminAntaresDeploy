@@ -1,7 +1,128 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 const Dashboard = () => {
+  // State untuk menyimpan daftar 5 pesanan teratas
+  const [topOrders, setTopOrders] = useState([]);
+  // State untuk melacak status loading pesanan
+  const [loadingOrders, setLoadingOrders] = useState(true);
+  // State untuk error jika fetch API pesanan gagal
+  const [ordersError, setOrdersError] = useState(null);
+  // State baru untuk menyimpan total penjualan
+  const [totalSales, setTotalSales] = useState(0);
+
+  // Fungsi untuk mendapatkan kelas Tailwind CSS berdasarkan status
+  const getStatusClass = (status) => {
+    switch (status.toLowerCase()) {
+      case "menunggu":
+        return "bg-yellow-100 text-yellow-700";
+      case "diproses":
+        return "bg-blue-100 text-blue-700";
+      case "dikirim":
+        return "bg-purple-100 text-purple-700";
+      case "selesai":
+        return "bg-green-100 text-green-700";
+      default:
+        return "bg-gray-100 text-gray-700";
+    }
+  };
+
+  // Efek untuk memuat data pesanan dari API saat komponen pertama kali dimuat
+  useEffect(() => {
+    const API_BASE_URL = "https://antaresapi-production.up.railway.app/api";
+    const API_ENDPOINT = `${API_BASE_URL}/pesanan`;
+
+    const fetchOrders = async () => {
+      setLoadingOrders(true); // Mulai loading
+      setOrdersError(null); // Reset error
+      try {
+        console.log(
+          "Dashboard: Mencoba mengambil data pesanan dari:",
+          API_ENDPOINT
+        );
+        const res = await fetch(API_ENDPOINT);
+
+        if (!res.ok) {
+          // Tangani respon yang tidak berhasil
+          const errorText = await res.text();
+          throw new Error(
+            `HTTP error! status: ${res.status}, detail: ${errorText}`
+          );
+        }
+
+        const rawData = await res.json();
+        console.log("Dashboard: 📦 Respons mentah dari API /pesanan:", rawData);
+
+        let dataToProcess = [];
+        // Menangani format respons yang mungkin berbeda (array langsung atau objek dengan properti 'data')
+        if (Array.isArray(rawData)) {
+          dataToProcess = rawData;
+        } else if (rawData && Array.isArray(rawData.data)) {
+          dataToProcess = rawData.data;
+        } else {
+          console.warn(
+            "Dashboard: Format respons API tidak sesuai ekspektasi (bukan array langsung atau objek dengan properti 'data' berupa array). Menganggap tidak ada data."
+          );
+          setTopOrders([]);
+          setTotalSales(0); // Set total penjualan ke 0 jika tidak ada data
+          setLoadingOrders(false);
+          return;
+        }
+
+        // Hitung total penjualan dari semua pesanan
+        // Pastikan item.total_harga adalah angka sebelum dijumlahkan
+        const calculatedTotalSales = dataToProcess.reduce(
+          (sum, item) => sum + (Number(item.total_harga) || 0),
+          0
+        );
+        setTotalSales(calculatedTotalSales);
+
+        // Urutkan pesanan berdasarkan tanggal (terbaru ke terlama) dan ambil 5 teratas
+        const sortedAndLimitedOrders = dataToProcess
+          .sort((a, b) => new Date(b.tanggal_pesan) - new Date(a.tanggal_pesan))
+          .slice(0, 5); // Ambil hanya 5 pesanan teratas
+
+        // Transformasi data agar sesuai dengan struktur tabel Dashboard
+        const transformedOrders = sortedAndLimitedOrders.map((item) => ({
+          order: item.pesanan_id,
+          name: `Pelanggan ID: ${item.pelanggan_id || "N/A"}`, // Menggunakan ID pelanggan jika nama pembeli tidak tersedia
+          date: new Date(item.tanggal_pesan).toLocaleDateString("id-ID", {
+            // Format tanggal
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          }),
+          status: item.status_pesanan,
+          place: "Tidak Tersedia", // Placeholder karena alamat tidak ada di respons API ini
+          total: `Rp ${Number(item.total_harga || 0).toLocaleString("id-ID")}`, // Pastikan angka sebelum format
+        }));
+
+        setTopOrders(transformedOrders);
+        console.log(
+          "Dashboard: ✅ 5 Pesanan teratas setelah transformasi:",
+          transformedOrders
+        );
+        console.log(
+          "Dashboard: ✅ Total Penjualan Dihitung:",
+          calculatedTotalSales
+        );
+      } catch (err) {
+        console.error(
+          "Dashboard: Gagal memuat pesanan atau menghitung total penjualan:",
+          err
+        );
+        setOrdersError(
+          `Gagal memuat data. Ini mungkin masalah CORS atau API tidak aktif. Detail: ${err.message}`
+        );
+        setTotalSales(0); // Reset total penjualan jika ada error
+      } finally {
+        setLoadingOrders(false);
+      }
+    };
+
+    fetchOrders();
+  }, []); // Efek ini hanya berjalan sekali saat komponen di-mount
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       {/* Sidebar */}
@@ -27,7 +148,7 @@ const Dashboard = () => {
               </Link>
             </li>
             <li className="cursor-pointer hover:underline">Pesan</li>
-            <li className="cursor-pointer hover:underline">
+            <li>
               <Link to="/pengaturan" className="hover:underline">
                 Pengaturan
               </Link>
@@ -54,25 +175,42 @@ const Dashboard = () => {
         </header>
 
         {/* Summary Cards */}
-        <section className="flex gap-6 mb-10">
-          <div className="flex items-center gap-4 bg-red-100 p-5 rounded-lg flex-1">
+        <section className="flex flex-wrap gap-6 mb-10">
+          <div className="flex items-center gap-4 bg-red-100 p-5 rounded-lg flex-1 min-w-[250px]">
             <div className="text-3xl">📊</div>
             <div>
-              <p className="text-lg font-semibold">Rp. 225.000</p>
+              {loadingOrders ? (
+                <p className="text-lg font-semibold text-gray-600">Memuat...</p>
+              ) : ordersError ? (
+                <p className="text-lg font-semibold text-red-600">Error</p>
+              ) : (
+                <p className="text-lg font-semibold">
+                  Rp. {totalSales.toLocaleString("id-ID")}
+                </p>
+              )}
               <small className="text-gray-600">Total Penjualan</small>
             </div>
           </div>
-          <div className="flex items-center gap-4 bg-yellow-100 p-5 rounded-lg flex-1">
+          <div className="flex items-center gap-4 bg-yellow-100 p-5 rounded-lg flex-1 min-w-[250px]">
             <div className="text-3xl">📦</div>
             <div>
-              <p className="text-lg font-semibold">300</p>
+              {loadingOrders ? (
+                <p className="text-lg font-semibold text-gray-600">Memuat...</p>
+              ) : ordersError ? (
+                <p className="text-lg font-semibold text-red-600">Error</p>
+              ) : (
+                <p className="text-lg font-semibold">
+                  {topOrders.length > 0 ? topOrders.length : 0}
+                </p> // Menggunakan jumlah pesanan yang diambil untuk 5 teratas
+              )}
               <small className="text-gray-600">Total Pesanan</small>
             </div>
           </div>
-          <div className="flex items-center gap-4 bg-green-100 p-5 rounded-lg flex-1">
+          <div className="flex items-center gap-4 bg-green-100 p-5 rounded-lg flex-1 min-w-[250px]">
             <div className="text-3xl">💊</div>
             <div>
-              <p className="text-lg font-semibold">3</p>
+              <p className="text-lg font-semibold">3</p>{" "}
+              {/* Placeholder, Anda perlu API terpisah untuk ini */}
               <small className="text-gray-600">Produk Terjual</small>
             </div>
           </div>
@@ -80,59 +218,61 @@ const Dashboard = () => {
 
         {/* Order Status Table */}
         <section>
-          <h2 className="text-xl font-semibold mb-4">Status Pemesanan</h2>
-          <div className="overflow-auto">
-            <table className="min-w-full bg-white rounded-lg overflow-hidden border border-gray-200">
-              <thead className="bg-gray-100 text-left">
-                <tr>
-                  <th className="px-4 py-3">Order</th>
-                  <th className="px-4 py-3">Name</th>
-                  <th className="px-4 py-3">Date</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Place</th>
-                  <th className="px-4 py-3">Total</th>
-                </tr>
-              </thead>
-              <tbody className="text-sm">
-                <tr className="border-t">
-                  <td className="px-4 py-3">01</td>
-                  <td className="px-4 py-3">Anazia</td>
-                  <td className="px-4 py-3">Jan 20, 2025</td>
-                  <td className="px-4 py-3">
-                    <span className="px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full font-semibold">
-                      Delivered
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">Yogyakarta</td>
-                  <td className="px-4 py-3">Rp. 50.000</td>
-                </tr>
-                <tr className="border-t">
-                  <td className="px-4 py-3">02</td>
-                  <td className="px-4 py-3">Syedina</td>
-                  <td className="px-4 py-3">Jan 24, 2025</td>
-                  <td className="px-4 py-3">
-                    <span className="px-3 py-1 bg-yellow-100 text-yellow-800 text-sm rounded-full font-semibold">
-                      Pending
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">Bantul</td>
-                  <td className="px-4 py-3">Rp. 100.000</td>
-                </tr>
-                <tr className="border-t">
-                  <td className="px-4 py-3">03</td>
-                  <td className="px-4 py-3">Asyifaa</td>
-                  <td className="px-4 py-3">Feb 21, 2025</td>
-                  <td className="px-4 py-3">
-                    <span className="px-3 py-1 bg-red-100 text-red-800 text-sm rounded-full font-semibold">
-                      Cancelled
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">Condong Catur</td>
-                  <td className="px-4 py-3">Rp. 75.000</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <h2 className="text-xl font-semibold mb-4">
+            Status Pemesanan Teratas
+          </h2>
+          {loadingOrders ? (
+            <div className="text-center py-8 text-gray-500">
+              Memuat pesanan...
+            </div>
+          ) : ordersError ? (
+            <div className="text-center py-8 text-red-500">
+              Error: {ordersError}
+            </div>
+          ) : topOrders.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              Tidak ada pesanan ditemukan.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full bg-white rounded-lg overflow-hidden border border-gray-200">
+                <thead className="bg-gray-100 text-left">
+                  <tr>
+                    <th className="px-4 py-3">Order ID</th>
+                    <th className="px-4 py-3">Nama Pembeli</th>
+                    <th className="px-4 py-3">Tanggal</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3">Lokasi</th>
+                    <th className="px-4 py-3">Total</th>
+                  </tr>
+                </thead>
+                <tbody className="text-sm">
+                  {topOrders.map((orderItem) => (
+                    <tr
+                      key={orderItem.order}
+                      className="border-t border-gray-100"
+                    >
+                      <td className="px-4 py-3">{orderItem.order}</td>
+                      <td className="px-4 py-3">{orderItem.name}</td>
+                      <td className="px-4 py-3">{orderItem.date}</td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`px-3 py-1 text-sm rounded-full font-semibold ${getStatusClass(
+                            orderItem.status
+                          )}`}
+                        >
+                          {orderItem.status.charAt(0).toUpperCase() +
+                            orderItem.status.slice(1)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">{orderItem.place}</td>
+                      <td className="px-4 py-3">{orderItem.total}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </section>
       </main>
     </div>
