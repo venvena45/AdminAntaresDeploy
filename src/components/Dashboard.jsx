@@ -1,25 +1,37 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React from "react";
+import { Link } from "react-router-dom";
 
 const Dashboard = () => {
   return (
     <div className="flex min-h-screen bg-gray-50">
       {/* Sidebar */}
       <aside className="w-56 bg-white border-r border-gray-200 p-5">
-        <div className="text-2xl font-bold text-green-700 mb-10">Apotek ANTARES</div>
+        <div className="text-2xl font-bold text-green-700 mb-10">
+          Apotek ANTARES
+        </div>
         <nav>
           <ul className="space-y-4 text-gray-700">
             <li>
-              <Link to="/pesanan" className="hover:underline">Pemesanan</Link>
+              <Link to="/pesanan" className="hover:underline">
+                Pemesanan
+              </Link>
             </li>
             <li>
-              <Link to="/produk" className="hover:underline">Produk</Link>
+              <Link to="/produk" className="hover:underline">
+                Produk
+              </Link>
             </li>
             <li>
-              <Link to="/report" className="hover:underline">Report Penjualan</Link>
+              <Link to="/report" className="hover:underline">
+                Report Penjualan
+              </Link>
             </li>
             <li className="cursor-pointer hover:underline">Pesan</li>
-            <li className="cursor-pointer hover:underline">Pengaturan</li>
+            <li className="cursor-pointer hover:underline">
+              <Link to="/pengaturan" className="hover:underline">
+                Pengaturan
+              </Link>
+            </li>
             <li className="cursor-pointer hover:underline">Keluar</li>
           </ul>
         </nav>
@@ -87,7 +99,9 @@ const Dashboard = () => {
                   <td className="px-4 py-3">Anazia</td>
                   <td className="px-4 py-3">Jan 20, 2025</td>
                   <td className="px-4 py-3">
-                    <span className="px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full font-semibold">Delivered</span>
+                    <span className="px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full font-semibold">
+                      Delivered
+                    </span>
                   </td>
                   <td className="px-4 py-3">Yogyakarta</td>
                   <td className="px-4 py-3">Rp. 50.000</td>
@@ -97,7 +111,9 @@ const Dashboard = () => {
                   <td className="px-4 py-3">Syedina</td>
                   <td className="px-4 py-3">Jan 24, 2025</td>
                   <td className="px-4 py-3">
-                    <span className="px-3 py-1 bg-yellow-100 text-yellow-800 text-sm rounded-full font-semibold">Pending</span>
+                    <span className="px-3 py-1 bg-yellow-100 text-yellow-800 text-sm rounded-full font-semibold">
+                      Pending
+                    </span>
                   </td>
                   <td className="px-4 py-3">Bantul</td>
                   <td className="px-4 py-3">Rp. 100.000</td>
@@ -107,7 +123,9 @@ const Dashboard = () => {
                   <td className="px-4 py-3">Asyifaa</td>
                   <td className="px-4 py-3">Feb 21, 2025</td>
                   <td className="px-4 py-3">
-                    <span className="px-3 py-1 bg-red-100 text-red-800 text-sm rounded-full font-semibold">Cancelled</span>
+                    <span className="px-3 py-1 bg-red-100 text-red-800 text-sm rounded-full font-semibold">
+                      Cancelled
+                    </span>
                   </td>
                   <td className="px-4 py-3">Condong Catur</td>
                   <td className="px-4 py-3">Rp. 75.000</td>
