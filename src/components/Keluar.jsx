@@ -16,9 +16,15 @@ export default function App() {
                 <div className="bg-white shadow-md rounded-lg p-6 text-center w-80">
                     <p className="mb-6 text-lg font-medium">Apakah Anda Yakin<br />Ingin Keluar?</p>
                     <div className="flex justify-between px-6">
-                        <button className="bg-blue-600 text-white px-4 py-2 rounded-md font-semibold hover:bg-blue-700">
+                        <button onClick={() => {
+                            console.log("Navigasi ke /login");
+                            navigate("/login");
+                        }}
+                            className="bg-blue-600 text-white px-4 py-2 rounded-md font-semibold hover:bg-blue-700">
                             Yakin
                         </button>
+
+
                         <button onClick={() => navigate("/")}
                             className="bg-red-600 text-white px-4 py-2 rounded-md font-semibold hover:bg-red-700">
                             Tidak
