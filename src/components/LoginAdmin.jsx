@@ -1,65 +1,100 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-export default function App() {
-    return (
-        <div className="min-h-screen flex flex-col justify-between bg-gray-200 font-sans">
-            {/* Header */}
-            <header className="bg-teal-700 text-white text-center py-4 font-bold text-lg">
-                APOTEK ANTARES
-            </header>
+export default function LoginAdmin() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-            {/* Body */}
-            <main className="flex flex-grow items-center justify-center px-4">
-                <div className="bg-white rounded-lg shadow-md p-8 w-full max-w-md md:max-w-lg">
+  const API_URL = "https://antaresapi-production.up.railway.app/api/auth/login";
 
-                    {/* Right: Form */}
-                    <div className="w-full">
-                        <h2 className="text-center text-lg font-bold mb-6">LOG IN</h2>
-                        <form className="flex flex-col gap-4">
-                            <input
-                                type="email"
-                                placeholder="Email"
-                                className="border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
-                            />
-                            <input
-                                type="password"
-                                placeholder="Password"
-                                className="border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
-                            />
-                            <button
-                                type="submit"
-                                className="bg-orange-500 text-white py-2 rounded font-semibold hover:bg-orange-600 transition duration-300 w-full"
-                            >
-                                Log in
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            </main>
+  useEffect(() => {
+    const isLoggedIn = localStorage.getItem("isLoggedIn");
+    if (isLoggedIn === "true") {
+      navigate("/");
+    }
+  }, [navigate]);
 
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setLoading(true);
+    setError("");
 
-            {/* Footer */}
-            <footer className="bg-teal-700 text-white py-4 px-8 text-sm">
-                <div className="flex justify-between flex-wrap">
-                    {/* Kontak */}
-                    <div>
-                        <h3 className="font-semibold mb-1">Kontak</h3>
-                        <p>📞 +62 852-456 7800</p>
-                        <p>📧 info@apotekantares.com</p>
-                        <p>📍 Jl. Kesehatan No.123, Jakarta</p>
-                    </div>
-                    {/* Jam Operasi */}
-                    <div>
-                        <h3 className="font-semibold mb-1">Jam Operasi</h3>
-                        <p>📅 Senin - Minggu</p>
-                        <p>🕘 07:00 - 21:00</p>
-                    </div>
-                </div>
-                <div className="text-center mt-4">
-                    © 2025 APOTEK ANTARES. All Rights Reserved.
-                </div>
-            </footer>
+    try {
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+      console.log("API Response:", data);
+
+      if (response.ok && data.success) {
+        localStorage.setItem("isLoggedIn", "true");
+        localStorage.setItem("user", JSON.stringify(data.user)); // opsional
+        navigate("/");
+      } else {
+        setError(
+          data.message ||
+            "Login gagal. Periksa kembali email dan password Anda."
+        );
+      }
+    } catch (err) {
+      console.error("Login API Error:", err);
+      setError(
+        "Tidak dapat terhubung ke server. Periksa koneksi internet Anda."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col justify-between bg-gray-200 font-sans">
+      <header className="bg-teal-700 text-white text-center py-4 font-bold text-lg">
+        APOTEK ANTARES
+      </header>
+      <main className="flex flex-grow items-center justify-center px-4">
+        <div className="bg-white rounded-lg shadow-md p-8 w-full max-w-md">
+          <h2 className="text-center text-lg font-bold mb-6">ADMIN LOG IN</h2>
+          {error && <p className="text-red-500 text-center mb-4">{error}</p>}
+          <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="border border-gray-300 rounded px-4 py-2"
+              disabled={loading}
+              required
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="border border-gray-300 rounded px-4 py-2"
+              disabled={loading}
+              required
+            />
+            <button
+              type="submit"
+              className="bg-orange-500 text-white py-2 rounded hover:bg-orange-600 disabled:bg-orange-300"
+              disabled={loading}
+            >
+              {loading ? "Memproses..." : "Log in"}
+            </button>
+          </form>
         </div>
-    );
+      </main>
+      <footer className="bg-teal-700 text-white text-center py-4 text-sm">
+        © 2025 APOTEK ANTARES. All Rights Reserved.
+      </footer>
+    </div>
+  );
 }
