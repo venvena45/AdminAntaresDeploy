@@ -33,12 +33,6 @@ export default function App() {
                             >
                                 Log in
                             </button>
-                            <p className="text-sm text-center mt-2">
-                                Belum punya akun?{" "}
-                                <a href="#" className="text-blue-500 hover:underline">
-                                    Registrasi disini
-                                </a>
-                            </p>
                         </form>
                     </div>
                 </div>
