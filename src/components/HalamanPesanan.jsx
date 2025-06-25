@@ -1,185 +1,230 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 
+// --- Konstanta API ---
+const API_BASE_URL = "https://antaresapi-production.up.railway.app/api";
+
+// --- Fungsi Helper untuk API ---
+
+const getAllPesanan = async () => {
+  const response = await fetch(`${API_BASE_URL}/pesanan`);
+  if (!response.ok)
+    throw new Error(
+      `Gagal mengambil daftar pesanan. Status: ${response.status}`
+    );
+  const data = await response.json();
+  return Array.isArray(data) ? data : data.data || [];
+};
+
+const getDetailPesananById = async (pesananId) => {
+  if (!pesananId) return [];
+  const response = await fetch(
+    `${API_BASE_URL}/detail-pesanan/pesanan/${pesananId}`
+  );
+  if (!response.ok) {
+    console.warn(
+      `Gagal mengambil detail untuk pesanan ID ${pesananId}. Mungkin tidak ada item.`
+    );
+    return [];
+  }
+  const data = await response.json();
+  return Array.isArray(data) ? data : data.data || [];
+};
+
+const getAllObat = async () => {
+  const response = await fetch(`${API_BASE_URL}/obat`);
+  if (!response.ok) {
+    console.warn(`Gagal mengambil data obat.`);
+    return [];
+  }
+  const data = await response.json();
+  return Array.isArray(data) ? data : data.data || [];
+};
+
+const getUserById = async (userId) => {
+  if (!userId) return null;
+  const response = await fetch(`${API_BASE_URL}/auth/users/${userId}`);
+  if (!response.ok) {
+    console.warn(`FETCH GAGAL untuk User ID: ${userId}.`);
+    return {
+      id_pasti: userId,
+      nama: `[Gagal Muat User ID: ${userId}]`,
+      alamat: "N/A",
+    };
+  }
+  const responseData = await response.json();
+  if (responseData && responseData.user) {
+    return { ...responseData.user, id_pasti: userId };
+  } else {
+    console.warn(
+      `Struktur data pengguna untuk ID ${userId} tidak sesuai ekspektasi.`
+    );
+    return { id_pasti: userId, nama: `[Struktur Data Salah]`, alamat: "N/A" };
+  }
+};
+
+// Fungsi ini sekarang menerima payload lengkap
+const updateOrderStatus = async (pesananId, payload) => {
+  const response = await fetch(`${API_BASE_URL}/pesanan/${pesananId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload), // Mengirim payload lengkap
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(
+      `Gagal memperbarui status pesanan. Server merespons: ${errorBody}`
+    );
+  }
+
+  return await response.json();
+};
+
+/**
+ * Komponen utama untuk Halaman Pesanan di sisi admin.
+ */
 const HalamanPesanan = () => {
-  // State untuk menyimpan daftar pesanan
   const [pesanan, setPesanan] = useState([]);
-  // State untuk melacak status loading data
+  const [rawPesanan, setRawPesanan] = useState([]); // State untuk menyimpan data mentah
   const [loading, setLoading] = useState(true);
-  // State untuk kata kunci pencarian
-  const [searchTerm, setSearchTerm] = useState("");
-  // State untuk filter status pesanan
-  const [filter, setFilter] = useState("semua");
-  // State untuk mode gelap/terang
-  const [darkMode, setDarkMode] = useState(false);
-  // State untuk error jika fetch API gagal
   const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filter, setFilter] = useState("semua");
 
-  // ** DEBUGGING OPTION: Atur ke true untuk menggunakan data dummy jika API bermasalah **
-  const USE_DUMMY_DATA = false; // Ubah ini menjadi 'true' jika Anda ingin menguji dengan data dummy
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
 
-  // Data dummy yang akan digunakan jika USE_DUMMY_DATA diatur ke true
-  const dummyData = [
-    {
-      id: 1,
-      namaPembeli: "Budi Santoso (Dummy)",
-      alamat: "Jl. Mawar No. 10, Jakarta Selatan",
-      obat: [
-        { nama: "Paracetamol", jumlah: 2 },
-        { nama: "Vitamin C", jumlah: 1 },
-      ],
-      totalJumlah: 3,
-      totalHarga: 75000,
-      status: "selesai",
-      tanggal: "2023-05-20",
-    },
-    {
-      id: 2,
-      namaPembeli: "Siti Nurhaliza (Dummy)",
-      alamat: "Jl. Melati No. 5, Jakarta Pusat",
-      obat: [{ nama: "Amoxicillin", jumlah: 1 }],
-      totalJumlah: 1,
-      totalHarga: 45000,
-      status: "diproses",
-      tanggal: "2023-05-21",
-    },
-    {
-      id: 3,
-      namaPembeli: "Ahmad Wahyu (Dummy)",
-      alamat: "Jl. Kenanga No. 8, Jakarta Timur",
-      obat: [
-        { nama: "Ibuprofen", jumlah: 1 },
-        { nama: "Antasida", jumlah: 2 },
-        { nama: "Vitamin B Complex", jumlah: 1 },
-      ],
-      totalJumlah: 4,
-      totalHarga: 120000,
-      status: "dikirim",
-      tanggal: "2023-05-19",
-    },
-    {
-      id: 4,
-      namaPembeli: "Dewi Lestari (Dummy)",
-      alamat: "Jl. Anggrek No. 15, Jakarta Barat",
-      obat: [{ nama: "Cetirizine", jumlah: 2 }],
-      totalJumlah: 2,
-      totalHarga: 30000,
-      status: "menunggu",
-      tanggal: "2023-05-21",
-    },
-  ];
+    try {
+      const [pesananUtamaList, semuaObatList] = await Promise.all([
+        getAllPesanan(),
+        getAllObat(),
+      ]);
 
-  // Efek untuk beralih mode gelap pada body dokumen
-  useEffect(() => {
-    document.body.classList.toggle("dark", darkMode);
-  }, [darkMode]);
+      setRawPesanan(pesananUtamaList); // Simpan data mentah
 
-  // Efek untuk memuat data pesanan dari API atau data dummy
-  useEffect(() => {
-    const API_BASE_URL = "https://antaresapi-production.up.railway.app/api";
-    const API_ENDPOINT = `${API_BASE_URL}/pesanan`;
+      const obatMap = new Map(
+        semuaObatList.map((obat) => [String(obat.obat_id).trim(), obat])
+      );
 
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
+      const transformedDataPromises = pesananUtamaList.map(
+        async (pesananItem) => {
+          const pelangganIdStr = String(pesananItem.pelanggan_id).trim();
+          const [userData, detailItems] = await Promise.all([
+            getUserById(pelangganIdStr),
+            getDetailPesananById(pesananItem.pesanan_id),
+          ]);
 
-      if (USE_DUMMY_DATA) {
-        // Menggunakan data dummy jika USE_DUMMY_DATA true
-        console.log("Menggunakan data dummy...");
-        setTimeout(() => {
-          setPesanan(dummyData);
-          setLoading(false);
-        }, 1000);
-        return; // Hentikan eksekusi fetch API
-      }
-
-      try {
-        console.log("Mencoba mengambil data dari:", API_ENDPOINT);
-        const res = await fetch(API_ENDPOINT);
-
-        if (!res.ok) {
-          const errorText = await res.text();
-          throw new Error(
-            `HTTP error! status: ${res.status}, detail: ${errorText}`
-          );
+          return {
+            id: pesananItem.pesanan_id,
+            namaPembeli:
+              userData?.nama || `[ID: ${pelangganIdStr} tidak cocok]`,
+            alamat:
+              pesananItem.alamat_pengiriman ||
+              userData?.alamat ||
+              "Alamat tidak tersedia",
+            obat: detailItems.map((d) => {
+              const obatData = obatMap.get(String(d.obat_id).trim());
+              return {
+                nama: obatData?.nama_obat || `Obat ID: ${d.obat_id}`,
+                jumlah: d.jumlah,
+              };
+            }),
+            totalHarga: pesananItem.total_harga,
+            status: pesananItem.status_pesanan,
+            tanggal: new Date(pesananItem.tanggal_pesan).toLocaleDateString(
+              "id-ID",
+              {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              }
+            ),
+          };
         }
+      );
 
-        const rawData = await res.json();
-        console.log("📦 Respons mentah dari API /pesanan:", rawData);
+      const finalData = await Promise.all(transformedDataPromises);
+      setPesanan(finalData.sort((a, b) => b.id - a.id));
+    } catch (err) {
+      console.error("Terjadi kesalahan fatal saat memuat data pesanan:", err);
+      setError(`Gagal memuat data. Detail: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-        let dataToTransform = [];
-        // Menangani format respons yang mungkin berbeda (array langsung atau objek dengan properti 'data')
-        if (Array.isArray(rawData)) {
-          dataToTransform = rawData;
-        } else if (rawData && Array.isArray(rawData.data)) {
-          dataToTransform = rawData.data;
-        } else {
-          console.warn(
-            "Format respons API tidak sesuai ekspektasi (bukan array langsung atau objek dengan properti 'data' berupa array). Menganggap tidak ada data."
-          );
-          setPesanan([]); // Pastikan pesanan kosong jika format tidak cocok
-          setLoading(false);
-          return;
-        }
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
-        const transformedData = dataToTransform.map((item) => ({
-          id: item.pesanan_id,
-          namaPembeli: `Pelanggan ID: ${item.pelanggan_id || "N/A"}`,
-          alamat: "Alamat tidak tersedia",
-          obat: [{ nama: "Detail obat tidak tersedia", jumlah: 0 }],
-          totalJumlah: 0,
-          totalHarga: item.total_harga,
-          status: item.status_pesanan,
-          tanggal: item.tanggal_pesan,
-        }));
-        setPesanan(transformedData);
-        console.log("✅ Data pesanan setelah transformasi:", transformedData);
-      } catch (err) {
-        console.error("Gagal memuat data pesanan:", err);
-        setError(
-          `Gagal memuat data pesanan. Ini mungkin masalah CORS atau API tidak aktif. Detail: ${err.message}`
-        );
-      } finally {
-        setTimeout(() => {
-          setLoading(false);
-        }, 500);
-      }
+  // Handler untuk membuat payload lengkap sebelum mengirim
+  const handleUpdateStatus = async (pesananId, newStatus) => {
+    // Cari data pesanan asli dari state rawPesanan
+    const orderToUpdate = rawPesanan.find((p) => p.pesanan_id === pesananId);
+
+    if (!orderToUpdate) {
+      console.error("Data pesanan asli tidak ditemukan untuk ID:", pesananId);
+      alert("Gagal memperbarui: Data asli tidak ditemukan.");
+      return;
+    }
+
+    // Buat payload sesuai dengan yang dibutuhkan backend
+    const payload = {
+      pelanggan_id: orderToUpdate.pelanggan_id,
+      tanggal_pesan: orderToUpdate.tanggal_pesan.split("T")[0], // Pastikan format tanggal YYYY-MM-DD
+      total_harga: orderToUpdate.total_harga,
+      status_pesanan: newStatus, // Gunakan status yang baru
+      metode_pembayaran: orderToUpdate.metode_pembayaran,
+      alamat_pengiriman: orderToUpdate.alamat_pengiriman,
     };
 
-    fetchData();
-  }, []); // Efek ini hanya berjalan sekali saat komponen di-mount
-
-  // Filter pesanan berdasarkan pencarian dan status
-  const filteredPesanan = pesanan.filter((item) => {
-    const matchSearch =
-      item.namaPembeli.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.alamat.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.obat.some((o) =>
-        o.nama.toLowerCase().includes(searchTerm.toLowerCase())
+    try {
+      await updateOrderStatus(pesananId, payload);
+      // Perbarui state UI secara optimis
+      setPesanan((prevPesanan) =>
+        prevPesanan.map((p) =>
+          p.id === pesananId ? { ...p, status: newStatus } : p
+        )
       );
+    } catch (err) {
+      console.error(`Gagal mengubah status untuk pesanan ${pesananId}:`, err);
+      alert(`Gagal memperbarui status: ${err.message}`);
+    }
+  };
+
+  const filteredPesanan = pesanan.filter((item) => {
+    const searchLower = searchTerm.toLowerCase();
+    const matchSearch =
+      item.namaPembeli.toLowerCase().includes(searchLower) ||
+      item.alamat.toLowerCase().includes(searchLower) ||
+      item.obat.some((o) => o.nama.toLowerCase().includes(searchLower));
     const matchFilter =
       filter === "semua" || item.status.toLowerCase() === filter.toLowerCase();
     return matchSearch && matchFilter;
   });
 
-  // Fungsi untuk mendapatkan kelas Tailwind CSS berdasarkan status
   const getStatusClass = (status) => {
-    switch (status.toLowerCase()) {
+    switch (status?.toLowerCase()) {
       case "menunggu":
-        return "bg-yellow-100 text-yellow-700";
+        return "bg-yellow-100 text-yellow-800";
       case "diproses":
-        return "bg-blue-100 text-blue-700";
+        return "bg-blue-100 text-blue-800";
       case "dikirim":
-        return "bg-purple-100 text-purple-700";
+        return "bg-purple-100 text-purple-800";
       case "selesai":
-        return "bg-green-100 text-green-700";
+        return "bg-green-100 text-green-800";
+      case "dibatalkan":
+        return "bg-red-100 text-red-800";
       default:
-        return "bg-gray-100 text-gray-700";
+        return "bg-gray-100 text-gray-800";
     }
   };
 
-  // Fungsi untuk mendapatkan ikon emoji berdasarkan status
   const getStatusIcon = (status) => {
-    switch (status.toLowerCase()) {
+    switch (status?.toLowerCase()) {
       case "menunggu":
         return "⏱️";
       case "diproses":
@@ -188,180 +233,195 @@ const HalamanPesanan = () => {
         return "🚚";
       case "selesai":
         return "✅";
+      case "dibatalkan":
+        return "❌";
       default:
         return "ℹ️";
     }
   };
-
-  // Tampilan loading
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen text-gray-500">
-        Memuat data pesanan...
-      </div>
-    );
-  }
-
-  // Tampilan error
-  if (error) {
-    return (
-      <div className="flex justify-center items-center h-screen text-red-500">
-        Error: {error}
-        <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-          Pastikan server API Anda berjalan dan mengizinkan permintaan CORS dari
-          domain ini. Anda bisa mengubah `USE_DUMMY_DATA` menjadi `true` di kode
-          untuk melihat UI dengan data dummy.
+      <div className="flex flex-col justify-center items-center h-screen text-gray-600">
+        <svg
+          className="animate-spin h-8 w-8 text-blue-500 mb-4"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+          ></circle>
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          ></path>
+        </svg>
+        <p className="font-semibold">
+          Mengambil dan Menggabungkan Data Pesanan...
         </p>
       </div>
     );
   }
-
+  if (error) {
+    return (
+      <div className="flex flex-col justify-center items-center h-screen text-center p-4">
+        <div className="text-red-500 text-4xl mb-3">⚠️</div>
+        <h2 className="text-lg font-bold text-red-700">Terjadi Kesalahan</h2>
+        <p className="max-w-md text-gray-600 mt-2">{error}</p>
+      </div>
+    );
+  }
   return (
-    <div
-      className={`p-6 min-h-screen ${
-        darkMode ? "bg-gray-900 text-white" : "bg-white text-gray-900"
-      }`}
-    >
+    <div className="p-4 sm:p-6 bg-gray-50 min-h-screen font-sans">
       <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          🛍️ Daftar Pesanan Masuk
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
+          Daftar Pesanan Masuk
         </h1>
-        <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
-          <button
-            onClick={() => setDarkMode(!darkMode)}
-            className="text-xl p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-            title={
-              darkMode ? "Beralih ke mode terang" : "Beralih ke mode gelap"
-            }
-          >
-            {darkMode ? "☀️" : "🌙"}
-          </button>
-          <div className="relative w-full sm:w-64">
-            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500">
-              🔍
-            </span>
-            <input
-              type="text"
-              placeholder="Cari pesanan..."
-              className={`pl-10 pr-4 py-2 border rounded-md w-full focus:ring-blue-500 focus:border-blue-500 ${
-                darkMode
-                  ? "bg-gray-800 border-gray-700 text-white"
-                  : "bg-white border-gray-300 text-gray-900"
-              }`}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
+        <div className="relative w-full sm:w-72">
+          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+            🔍
+          </span>
+          <input
+            type="text"
+            placeholder="Cari nama, alamat, atau obat..."
+            className="pl-10 pr-4 py-2 border rounded-lg w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
       </div>
-
-      <div className="flex gap-2 mb-4 flex-wrap">
-        {["semua", "menunggu", "diproses", "dikirim", "selesai"].map(
-          (status) => (
-            <button
-              key={status}
-              onClick={() => setFilter(status)}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
-                filter === status
-                  ? "bg-blue-600 text-white shadow-md"
-                  : "bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-              }`}
-            >
-              {getStatusIcon(status)}{" "}
-              {status.charAt(0).toUpperCase() + status.slice(1)}
-            </button>
-          )
-        )}
-      </div>
-
-      {filteredPesanan.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="text-4xl mb-4">❓</div>
-          <h3
-            className={`text-lg font-semibold ${
-              darkMode ? "text-gray-200" : "text-gray-800"
+      <div className="flex gap-2 mb-6 flex-wrap">
+        {[
+          "semua",
+          "menunggu",
+          "diproses",
+          "dikirim",
+          "selesai",
+          "dibatalkan",
+        ].map((status) => (
+          <button
+            key={status}
+            onClick={() => setFilter(status)}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 border-2 ${
+              filter === status
+                ? "bg-blue-600 text-white border-blue-600 shadow-md"
+                : "bg-white text-gray-600 border-gray-200 hover:border-blue-500 hover:text-blue-600"
             }`}
           >
-            Tidak ada pesanan ditemukan
+            {" "}
+            {getStatusIcon(status)}{" "}
+            {status.charAt(0).toUpperCase() + status.slice(1)}{" "}
+          </button>
+        ))}
+      </div>
+      {filteredPesanan.length === 0 ? (
+        <div className="text-center py-16 px-6 bg-white rounded-lg shadow-sm">
+          <div className="text-5xl mb-4">📂</div>
+          <h3 className="text-xl font-semibold text-gray-800">
+            Tidak Ada Pesanan Ditemukan
           </h3>
-          <p className="text-gray-500">
-            Coba ubah filter atau kata kunci pencarian Anda
-            {USE_DUMMY_DATA &&
-              " (Ini adalah data dummy, Anda bisa mengubah `USE_DUMMY_DATA` ke `false` untuk mencoba API sungguhan)."}
-            {!USE_DUMMY_DATA &&
-              !loading &&
-              !error &&
-              " (Jika Anda yakin API berfungsi, mungkin tidak ada pesanan dengan kriteria ini. Periksa konsol untuk respons API mentah)."}
+          <p className="text-gray-500 mt-2">
+            Coba ubah filter atau kata kunci pencarian Anda.
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-lg shadow-md">
-          <table
-            className={`min-w-full divide-y ${
-              darkMode ? "divide-gray-700" : "divide-gray-200"
-            }`}
-          >
-            <thead className={`${darkMode ? "bg-gray-700" : "bg-gray-100"}`}>
+        <div className="overflow-x-auto bg-white rounded-lg shadow-md">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-100">
               <tr>
                 {[
-                  "No",
-                  "Nama Pembeli",
-                  "Alamat",
-                  "Obat yang Dipesan",
-                  "Jumlah",
+                  "ID Pesanan",
+                  "Pelanggan",
+                  "Detail Pesanan",
                   "Total Harga",
                   "Status",
-                ].map((th, i) => (
+                  "Aksi",
+                ].map((th) => (
                   <th
-                    key={i}
-                    className={`text-left px-4 py-3 text-sm font-semibold uppercase tracking-wider ${
-                      darkMode ? "text-gray-200" : "text-gray-600"
-                    }`}
+                    key={th}
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider"
                   >
                     {th}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody
-              className={`${darkMode ? "bg-gray-800" : "bg-white"} divide-y ${
-                darkMode ? "divide-gray-700" : "divide-gray-200"
-              }`}
-            >
-              {filteredPesanan.map((item, index) => (
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredPesanan.map((item) => (
                 <tr
                   key={item.id}
-                  className={`${
-                    darkMode ? "even:bg-gray-700" : "even:bg-gray-50"
-                  }`}
+                  className="hover:bg-gray-50 transition-colors"
                 >
-                  <td className="px-4 py-3 text-sm">{index + 1}</td>
-                  <td className="px-4 py-3 text-sm">
-                    <div>{item.namaPembeli}</div>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-semibold text-gray-900">
+                      #{item.id}
+                    </div>
                     <div className="text-xs text-gray-500">{item.tanggal}</div>
                   </td>
-                  <td className="px-4 py-3 text-sm">{item.alamat}</td>
-                  <td className="px-4 py-3 text-sm">
-                    <ul className="list-disc ml-5">
-                      {item.obat.map((obat, idx) => (
-                        <li key={idx}>
-                          {obat.nama} ({obat.jumlah})
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">
+                      {item.namaPembeli}
+                    </div>
+                    <div className="text-xs text-gray-600 break-words max-w-xs">
+                      {item.alamat}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <ul className="list-disc pl-5 space-y-1 text-sm text-gray-800">
+                      {item.obat.length > 0 ? (
+                        item.obat.map((obat, idx) => (
+                          <li key={idx}>
+                            {obat.nama}{" "}
+                            <span className="font-semibold">
+                              (x{obat.jumlah || "?"})
+                            </span>
+                          </li>
+                        ))
+                      ) : (
+                        <li className="list-none text-gray-500 italic">
+                          Tidak ada item
                         </li>
-                      ))}
+                      )}
                     </ul>
                   </td>
-                  <td className="px-4 py-3 text-sm">{item.totalJumlah}</td>
-                  <td className="px-4 py-3 text-sm font-medium">
-                    Rp {item.totalHarga.toLocaleString("id-ID")}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
+                    Rp{item.totalHarga.toLocaleString("id-ID")}
                   </td>
-                  <td className="px-4 py-3 text-sm">
+                  <td className="px-6 py-4 whitespace-nowrap">
                     <span
-                      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusClass(
+                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${getStatusClass(
                         item.status
                       )}`}
                     >
                       {getStatusIcon(item.status)} {item.status}
                     </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    {/* Tombol untuk mengubah status dari "diproses" menjadi "dikirim" */}
+                    {item.status.toLowerCase() === "diproses" && (
+                      <button
+                        onClick={() => handleUpdateStatus(item.id, "dikirim")}
+                        className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out shadow-sm flex items-center gap-2"
+                      >
+                        🚚 Kirim Pesanan
+                      </button>
+                    )}
+                    {/* [BARU] Tombol untuk mengubah status dari "dikirim" menjadi "selesai" */}
+                    {item.status.toLowerCase() === "dikirim" && (
+                      <button
+                        onClick={() => handleUpdateStatus(item.id, "selesai")}
+                        className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out shadow-sm flex items-center gap-2"
+                      >
+                        ✅ Selesaikan Pesanan
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

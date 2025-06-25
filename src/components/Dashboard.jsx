@@ -1,19 +1,57 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 
-const Dashboard = () => {
-  // State untuk menyimpan daftar 5 pesanan teratas
-  const [topOrders, setTopOrders] = useState([]);
-  // State untuk melacak status loading pesanan
-  const [loadingOrders, setLoadingOrders] = useState(true);
-  // State untuk error jika fetch API pesanan gagal
-  const [ordersError, setOrdersError] = useState(null);
-  // State baru untuk menyimpan total penjualan
-  const [totalSales, setTotalSales] = useState(0);
+// --- Konstanta API ---
+const API_BASE_URL = "https://antaresapi-production.up.railway.app/api";
 
-  // Fungsi untuk mendapatkan kelas Tailwind CSS berdasarkan status
+// --- Fungsi Helper untuk API ---
+
+/**
+ * Mengambil semua data pesanan dari API.
+ */
+const getAllPesanan = async () => {
+  const response = await fetch(`${API_BASE_URL}/pesanan`);
+  if (!response.ok) {
+    throw new Error(
+      `Gagal mengambil daftar pesanan. Status: ${response.status}`
+    );
+  }
+  const data = await response.json();
+  // Menangani format respons yang mungkin berbeda
+  return Array.isArray(data) ? data : data.data || [];
+};
+
+/**
+ * Mengambil detail pengguna berdasarkan ID.
+ */
+const getUserById = async (userId) => {
+  if (!userId) return null;
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/users/${userId}`);
+    if (!response.ok) {
+      console.warn(`Gagal mengambil data untuk User ID: ${userId}.`);
+      return {
+        nama: `[ID: ${userId}]`,
+        alamat: "N/A",
+      };
+    }
+    const responseData = await response.json();
+    return responseData.user || { nama: `[Data Salah]`, alamat: "N/A" };
+  } catch (error) {
+    console.error(`Error saat mengambil User ID: ${userId}`, error);
+    return { nama: `[Gagal Muat]`, alamat: "N/A" };
+  }
+};
+
+const Dashboard = () => {
+  const [topOrders, setTopOrders] = useState([]);
+  const [loadingOrders, setLoadingOrders] = useState(true);
+  const [ordersError, setOrdersError] = useState(null);
+  const [totalSales, setTotalSales] = useState(0);
+  const [totalOrderCount, setTotalOrderCount] = useState(0);
+
   const getStatusClass = (status) => {
-    switch (status.toLowerCase()) {
+    switch (status?.toLowerCase()) {
       case "menunggu":
         return "bg-yellow-100 text-yellow-700";
       case "diproses":
@@ -27,101 +65,71 @@ const Dashboard = () => {
     }
   };
 
-  // Efek untuk memuat data pesanan dari API saat komponen pertama kali dimuat
-  useEffect(() => {
-    const API_BASE_URL = "https://antaresapi-production.up.railway.app/api";
-    const API_ENDPOINT = `${API_BASE_URL}/pesanan`;
+  const fetchData = useCallback(async () => {
+    setLoadingOrders(true);
+    setOrdersError(null);
+    try {
+      const allOrders = await getAllPesanan();
 
-    const fetchOrders = async () => {
-      setLoadingOrders(true); // Mulai loading
-      setOrdersError(null); // Reset error
-      try {
-        console.log(
-          "Dashboard: Mencoba mengambil data pesanan dari:",
-          API_ENDPOINT
-        );
-        const res = await fetch(API_ENDPOINT);
-
-        if (!res.ok) {
-          // Tangani respon yang tidak berhasil
-          const errorText = await res.text();
-          throw new Error(
-            `HTTP error! status: ${res.status}, detail: ${errorText}`
-          );
-        }
-
-        const rawData = await res.json();
-        console.log("Dashboard: 📦 Respons mentah dari API /pesanan:", rawData);
-
-        let dataToProcess = [];
-        // Menangani format respons yang mungkin berbeda (array langsung atau objek dengan properti 'data')
-        if (Array.isArray(rawData)) {
-          dataToProcess = rawData;
-        } else if (rawData && Array.isArray(rawData.data)) {
-          dataToProcess = rawData.data;
-        } else {
-          console.warn(
-            "Dashboard: Format respons API tidak sesuai ekspektasi (bukan array langsung atau objek dengan properti 'data' berupa array). Menganggap tidak ada data."
-          );
-          setTopOrders([]);
-          setTotalSales(0); // Set total penjualan ke 0 jika tidak ada data
-          setLoadingOrders(false);
-          return;
-        }
-
-        // Hitung total penjualan dari semua pesanan
-        // Pastikan item.total_harga adalah angka sebelum dijumlahkan
-        const calculatedTotalSales = dataToProcess.reduce(
-          (sum, item) => sum + (Number(item.total_harga) || 0),
-          0
-        );
-        setTotalSales(calculatedTotalSales);
-
-        // Urutkan pesanan berdasarkan tanggal (terbaru ke terlama) dan ambil 5 teratas
-        const sortedAndLimitedOrders = dataToProcess
-          .sort((a, b) => new Date(b.tanggal_pesan) - new Date(a.tanggal_pesan))
-          .slice(0, 5); // Ambil hanya 5 pesanan teratas
-
-        // Transformasi data agar sesuai dengan struktur tabel Dashboard
-        const transformedOrders = sortedAndLimitedOrders.map((item) => ({
-          order: item.pesanan_id,
-          name: `Pelanggan ID: ${item.pelanggan_id || "N/A"}`, // Menggunakan ID pelanggan jika nama pembeli tidak tersedia
-          date: new Date(item.tanggal_pesan).toLocaleDateString("id-ID", {
-            // Format tanggal
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-          }),
-          status: item.status_pesanan,
-          place: "Tidak Tersedia", // Placeholder karena alamat tidak ada di respons API ini
-          total: `Rp ${Number(item.total_harga || 0).toLocaleString("id-ID")}`, // Pastikan angka sebelum format
-        }));
-
-        setTopOrders(transformedOrders);
-        console.log(
-          "Dashboard: ✅ 5 Pesanan teratas setelah transformasi:",
-          transformedOrders
-        );
-        console.log(
-          "Dashboard: ✅ Total Penjualan Dihitung:",
-          calculatedTotalSales
-        );
-      } catch (err) {
-        console.error(
-          "Dashboard: Gagal memuat pesanan atau menghitung total penjualan:",
-          err
-        );
-        setOrdersError(
-          `Gagal memuat data. Ini mungkin masalah CORS atau API tidak aktif. Detail: ${err.message}`
-        );
-        setTotalSales(0); // Reset total penjualan jika ada error
-      } finally {
-        setLoadingOrders(false);
+      if (allOrders.length === 0) {
+        setTopOrders([]);
+        setTotalSales(0);
+        setTotalOrderCount(0);
+        return;
       }
-    };
 
-    fetchOrders();
-  }, []); // Efek ini hanya berjalan sekali saat komponen di-mount
+      // 1. Hitung total dari SEMUA pesanan
+      const calculatedTotalSales = allOrders.reduce(
+        (sum, item) => sum + (Number(item.total_harga) || 0),
+        0
+      );
+      setTotalSales(calculatedTotalSales);
+      setTotalOrderCount(allOrders.length);
+
+      // 2. [DIPERBAIKI] Urutkan berdasarkan ID pesanan (terbaru ke terlama) dan ambil 5 teratas
+      const sortedAndLimitedOrders = allOrders
+        .sort((a, b) => b.pesanan_id - a.pesanan_id)
+        .slice(0, 5);
+
+      // 3. Ambil detail pengguna untuk 5 pesanan teratas
+      const transformedOrdersPromises = sortedAndLimitedOrders.map(
+        async (item) => {
+          const userData = await getUserById(item.pelanggan_id);
+          return {
+            order: item.pesanan_id,
+            name: userData?.nama || `Pelanggan ID: ${item.pelanggan_id}`,
+            date: new Date(item.tanggal_pesan).toLocaleDateString("id-ID", {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+            }),
+            status: item.status_pesanan,
+            place:
+              item.alamat_pengiriman || userData?.alamat || "Tidak Tersedia",
+            total: `Rp ${Number(item.total_harga || 0).toLocaleString(
+              "id-ID"
+            )}`,
+          };
+        }
+      );
+
+      const finalTransformedOrders = await Promise.all(
+        transformedOrdersPromises
+      );
+      setTopOrders(finalTransformedOrders);
+    } catch (err) {
+      console.error("Dashboard: Gagal memuat data:", err);
+      setOrdersError(`Gagal memuat data. Detail: ${err.message}`);
+      setTotalSales(0);
+      setTotalOrderCount(0);
+    } finally {
+      setLoadingOrders(false);
+    }
+  }, []); // useCallback dependency kosong agar fungsi tidak dibuat ulang
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -147,13 +155,11 @@ const Dashboard = () => {
                 Report Penjualan
               </Link>
             </li>
-
             <li>
               <Link to="/pengaturan" className="hover:underline">
                 Pengaturan
               </Link>
             </li>
-
             <li>
               <Link to="/keluar" className="hover:underline">
                 Keluar
@@ -204,9 +210,7 @@ const Dashboard = () => {
               ) : ordersError ? (
                 <p className="text-lg font-semibold text-red-600">Error</p>
               ) : (
-                <p className="text-lg font-semibold">
-                  {topOrders.length > 0 ? topOrders.length : 0}
-                </p> // Menggunakan jumlah pesanan yang diambil untuk 5 teratas
+                <p className="text-lg font-semibold">{totalOrderCount}</p>
               )}
               <small className="text-gray-600">Total Pesanan</small>
             </div>
@@ -214,8 +218,7 @@ const Dashboard = () => {
           <div className="flex items-center gap-4 bg-green-100 p-5 rounded-lg flex-1 min-w-[250px]">
             <div className="text-3xl">💊</div>
             <div>
-              <p className="text-lg font-semibold">3</p>{" "}
-              {/* Placeholder, Anda perlu API terpisah untuk ini */}
+              <p className="text-lg font-semibold">3</p>
               <small className="text-gray-600">Produk Terjual</small>
             </div>
           </div>
