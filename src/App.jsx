@@ -1,5 +1,10 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 
 import Dashboard from "./components/Dashboard";
 import ProductManagement from "./components/ProductManagement";
@@ -28,6 +33,9 @@ function App() {
           <Route path="/stok-opname" element={<StockOpname />} />
           <Route path="/pengaturan" element={<Pengaturan />} />
         </Route>
+
+        {/* Redirect semua route yang tidak dikenal ke dashboard */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
   );
