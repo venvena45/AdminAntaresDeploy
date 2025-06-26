@@ -21,6 +21,7 @@ function App() {
 
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<Dashboard />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/produk" element={<ProductManagement />} />
           <Route path="/pesanan" element={<HalamanPesanan />} />
           <Route path="/report" element={<ReportPenjualan />} />

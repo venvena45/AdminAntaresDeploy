@@ -1,10 +1,66 @@
 import React, { useEffect, useState, useCallback } from "react";
 
+// =================================================================================
+// KOMPONEN LAYOUT BERSAMA (SHARED LAYOUT COMPONENT)
+// =================================================================================
+// Komponen Layout yang sama kita gunakan kembali di sini untuk konsistensi.
+const navItems = [
+  { to: "/dashboard", label: "Dashboard", icon: "📊" },
+  { to: "/pesanan", label: "Pemesanan", icon: "🛒" },
+  { to: "/produk", label: "Produk", icon: "💊" },
+  { to: "/report", label: "Report Penjualan", icon: "📈" },
+  { to: "/pengaturan", label: "Pengaturan", icon: "⚙️" },
+  { to: "/keluar", label: "Keluar", icon: "🚪" },
+];
+
+const Layout = ({ children, activePage }) => {
+  return (
+    <div className="flex min-h-screen bg-gray-100">
+      <aside className="w-64 bg-white/80 backdrop-blur-lg border-r border-white/20 p-6 shadow-xl flex-shrink-0">
+        <div className="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-10 text-center">
+          <div className="text-3xl mb-2">🏥</div>
+          Apotek ANTARES
+        </div>
+        <nav>
+          <ul className="space-y-3">
+            {navItems.map((item) => (
+              <li
+                key={item.label}
+                className="transform transition-all duration-200 hover:scale-105"
+              >
+                <a
+                  href={item.to}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group cursor-pointer
+                    ${
+                      activePage === item.label
+                        ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg"
+                        : "text-gray-700 hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-500 hover:text-white"
+                    }`}
+                >
+                  <span className="text-xl group-hover:scale-110 transition-transform duration-200">
+                    {item.icon}
+                  </span>
+                  {item.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </aside>
+      <main className="flex-1 p-4 md:p-6 overflow-y-auto">{children}</main>
+    </div>
+  );
+};
+
+// =================================================================================
+// KONTEN HALAMAN PEMESANAN (ORDER CONTENT)
+// =================================================================================
+// Kode asli Anda untuk halaman pesanan, diubah menjadi komponen konten.
+
 // --- Konstanta API ---
 const API_BASE_URL = "https://antaresapi-production.up.railway.app/api";
 
 // --- Fungsi Helper untuk API ---
-
 const getAllPesanan = async () => {
   const response = await fetch(`${API_BASE_URL}/pesanan`);
   if (!response.ok)
@@ -62,14 +118,13 @@ const getUserById = async (userId) => {
   }
 };
 
-// Fungsi ini sekarang menerima payload lengkap
 const updateOrderStatus = async (pesananId, payload) => {
   const response = await fetch(`${API_BASE_URL}/pesanan/${pesananId}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(payload), // Mengirim payload lengkap
+    body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
@@ -82,12 +137,9 @@ const updateOrderStatus = async (pesananId, payload) => {
   return await response.json();
 };
 
-/**
- * Komponen utama untuk Halaman Pesanan di sisi admin.
- */
-const HalamanPesanan = () => {
+const PesananContent = () => {
   const [pesanan, setPesanan] = useState([]);
-  const [rawPesanan, setRawPesanan] = useState([]); // State untuk menyimpan data mentah
+  const [rawPesanan, setRawPesanan] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -103,7 +155,7 @@ const HalamanPesanan = () => {
         getAllObat(),
       ]);
 
-      setRawPesanan(pesananUtamaList); // Simpan data mentah
+      setRawPesanan(pesananUtamaList);
 
       const obatMap = new Map(
         semuaObatList.map((obat) => [String(obat.obat_id).trim(), obat])
@@ -160,9 +212,7 @@ const HalamanPesanan = () => {
     fetchData();
   }, [fetchData]);
 
-  // Handler untuk membuat payload lengkap sebelum mengirim
   const handleUpdateStatus = async (pesananId, newStatus) => {
-    // Cari data pesanan asli dari state rawPesanan
     const orderToUpdate = rawPesanan.find((p) => p.pesanan_id === pesananId);
 
     if (!orderToUpdate) {
@@ -171,19 +221,17 @@ const HalamanPesanan = () => {
       return;
     }
 
-    // Buat payload sesuai dengan yang dibutuhkan backend
     const payload = {
       pelanggan_id: orderToUpdate.pelanggan_id,
-      tanggal_pesan: orderToUpdate.tanggal_pesan.split("T")[0], // Pastikan format tanggal YYYY-MM-DD
+      tanggal_pesan: orderToUpdate.tanggal_pesan.split("T")[0],
       total_harga: orderToUpdate.total_harga,
-      status_pesanan: newStatus, // Gunakan status yang baru
+      status_pesanan: newStatus,
       metode_pembayaran: orderToUpdate.metode_pembayaran,
       alamat_pengiriman: orderToUpdate.alamat_pengiriman,
     };
 
     try {
       await updateOrderStatus(pesananId, payload);
-      // Perbarui state UI secara optimis
       setPesanan((prevPesanan) =>
         prevPesanan.map((p) =>
           p.id === pesananId ? { ...p, status: newStatus } : p
@@ -225,6 +273,8 @@ const HalamanPesanan = () => {
 
   const getStatusIcon = (status) => {
     switch (status?.toLowerCase()) {
+      case "semua":
+        return "📂";
       case "menunggu":
         return "⏱️";
       case "diproses":
@@ -239,9 +289,10 @@ const HalamanPesanan = () => {
         return "ℹ️";
     }
   };
+
   if (loading) {
     return (
-      <div className="flex flex-col justify-center items-center h-screen text-gray-600">
+      <div className="flex flex-col justify-center items-center h-[calc(100vh-8rem)] text-gray-600">
         <svg
           className="animate-spin h-8 w-8 text-blue-500 mb-4"
           xmlns="http://www.w3.org/2000/svg"
@@ -268,17 +319,20 @@ const HalamanPesanan = () => {
       </div>
     );
   }
+
   if (error) {
     return (
-      <div className="flex flex-col justify-center items-center h-screen text-center p-4">
+      <div className="flex flex-col justify-center items-center h-[calc(100vh-8rem)] text-center p-4">
         <div className="text-red-500 text-4xl mb-3">⚠️</div>
         <h2 className="text-lg font-bold text-red-700">Terjadi Kesalahan</h2>
         <p className="max-w-md text-gray-600 mt-2">{error}</p>
       </div>
     );
   }
+
   return (
-    <div className="p-4 sm:p-6 bg-gray-50 min-h-screen font-sans">
+    // Div ini menjadi wrapper untuk konten di dalam <main>
+    <div>
       <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
           Daftar Pesanan Masuk
@@ -314,9 +368,8 @@ const HalamanPesanan = () => {
                 : "bg-white text-gray-600 border-gray-200 hover:border-blue-500 hover:text-blue-600"
             }`}
           >
-            {" "}
             {getStatusIcon(status)}{" "}
-            {status.charAt(0).toUpperCase() + status.slice(1)}{" "}
+            {status.charAt(0).toUpperCase() + status.slice(1)}
           </button>
         ))}
       </div>
@@ -404,7 +457,6 @@ const HalamanPesanan = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    {/* Tombol untuk mengubah status dari "diproses" menjadi "dikirim" */}
                     {item.status.toLowerCase() === "diproses" && (
                       <button
                         onClick={() => handleUpdateStatus(item.id, "dikirim")}
@@ -413,7 +465,6 @@ const HalamanPesanan = () => {
                         🚚 Kirim Pesanan
                       </button>
                     )}
-                    {/* [BARU] Tombol untuk mengubah status dari "dikirim" menjadi "selesai" */}
                     {item.status.toLowerCase() === "dikirim" && (
                       <button
                         onClick={() => handleUpdateStatus(item.id, "selesai")}
@@ -430,6 +481,19 @@ const HalamanPesanan = () => {
         </div>
       )}
     </div>
+  );
+};
+
+// =================================================================================
+// KOMPONEN EXPORT UTAMA (MAIN EXPORTED COMPONENT)
+// =================================================================================
+// Ini adalah komponen final yang menggabungkan Layout dan Konten.
+
+const HalamanPesanan = () => {
+  return (
+    <Layout activePage="Pemesanan">
+      <PesananContent />
+    </Layout>
   );
 };
 
