@@ -7,21 +7,60 @@ import {
   FiTrash2,
   FiPlusCircle,
   FiMinusCircle,
-  FiHome,
-  FiShoppingCart,
-  FiPackage,
-  FiBarChart2,
-  FiSettings,
-  FiLogOut,
 } from "react-icons/fi";
 
 // =================================================================================
-// KOMPONEN LAYOUT BERSAMA (SHARED LAYOUT COMPONENT)
+// KONSTANTA & API
 // =================================================================================
-// Komponen ini berisi Sidebar dan area konten utama.
-// Bagian <aside> telah diganti sesuai permintaan Anda.
+const API_BASE_URL = "https://antaresapi-production-006d.up.railway.app/api";
+const API_URL = `${API_BASE_URL}/obat`;
 
-// --- Navigasi Items untuk Sidebar Baru ---
+const KATEGORI_OBAT = [
+  "Semua Kategori",
+  "Obat Keras",
+  "Obat Bebas Terbatas",
+  "Obat Bebas",
+  "Obat Herbal",
+  "Vitamin & Suplemen",
+  "Perawatan Pribadi",
+];
+
+const GOLONGAN_OBAT = [
+  "Obat Keras",
+  "Obat Bebas Terbatas",
+  "Obat Bebas",
+  "Obat Herbal",
+];
+
+// Inisialisasi state awal yang kosong untuk form produk, sesuai dengan struktur ProductDetail.
+const INITIAL_PRODUCT_STATE = {
+  nama_obat: "",
+  harga_satuan: "",
+  harga_grosir: "", // Ditambahkan
+  stok: "",
+  foto: "",
+  satuan: "",
+  deskripsi: "",
+  komposisi: "",
+  kemasan: "",
+  manfaat: "",
+  kategori: "Obat Bebas",
+  dosis: "",
+  penyajian: "",
+  cara_penyimpanan: "",
+  perhatian: "",
+  efek_samping: "",
+  nama_standar_mims: "",
+  nomor_izin_edar: "",
+  golongan_obat: "Obat Bebas",
+  keterangan: "",
+  referensi: "",
+};
+
+
+// =================================================================================
+// KOMPONEN LAYOUT (Tidak ada perubahan signifikan, hanya untuk kelengkapan konteks)
+// =================================================================================
 const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: "📊" },
   { to: "/pesanan", label: "Pemesanan", icon: "🛒" },
@@ -34,7 +73,6 @@ const navItems = [
 const Layout = ({ children, activePage }) => {
   return (
     <div className="flex min-h-screen bg-gray-100">
-      {/* Sidebar - KODE BARU DITERAPKAN DI SINI */}
       <aside className="w-64 bg-white/80 backdrop-blur-lg border-r border-white/20 p-6 shadow-xl flex-shrink-0">
         <div className="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-10 text-center">
           <div className="text-3xl mb-2">🏥</div>
@@ -43,22 +81,16 @@ const Layout = ({ children, activePage }) => {
         <nav>
           <ul className="space-y-3">
             {navItems.map((item) => (
-              <li
-                key={item.label}
-                className="transform transition-all duration-200 hover:scale-105"
-              >
+              <li key={item.label} className="transform transition-all duration-200 hover:scale-105">
                 <a
                   href={item.to}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group cursor-pointer
-                    ${
-                      activePage === item.label
-                        ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg" // Gaya untuk item aktif
-                        : "text-gray-700 hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-500 hover:text-white" // Gaya default dan hover
-                    }`}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group cursor-pointer ${
+                    activePage === item.label
+                      ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg"
+                      : "text-gray-700 hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-500 hover:text-white"
+                  }`}
                 >
-                  <span className="text-xl group-hover:scale-110 transition-transform duration-200">
-                    {item.icon}
-                  </span>
+                  <span className="text-xl group-hover:scale-110 transition-transform duration-200">{item.icon}</span>
                   {item.label}
                 </a>
               </li>
@@ -66,53 +98,64 @@ const Layout = ({ children, activePage }) => {
           </ul>
         </nav>
       </aside>
-
-      {/* Main Content Area - Tidak ada perubahan */}
       <main className="flex-1 p-4 md:p-6 overflow-y-auto">{children}</main>
     </div>
   );
 };
 
 // =================================================================================
-// HALAMAN MANAJEMEN PRODUK (PRODUCT MANAGEMENT PAGE)
+// SUB-KOMPONEN HALAMAN PRODUK (Diperbarui)
 // =================================================================================
-// TIDAK ADA PERUBAHAN PADA KODE DI BAWAH INI
 
-// --- Variabel & Konstanta untuk Produk ---
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-const API_URL = `${API_BASE_URL}/obat`;
-
-const KATEGORI_OBAT = [
-  "Semua Kategori",
-  "Obat Resep",
-  "Obat Bebas",
-  "Vitamin & Suplemen",
-  "Perawatan Pribadi",
-];
-
-// --- Sub-Komponen Halaman Produk ---
 const LoadingSpinner = () => (
   <div className="flex flex-col justify-center items-center py-20 bg-white rounded-lg shadow-md">
     <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600"></div>
-    <p className="mt-4 text-lg text-gray-600 font-semibold">
-      Memuat data produk...
-    </p>
+    <p className="mt-4 text-lg text-gray-600 font-semibold">Memuat data produk...</p>
   </div>
 );
 
+// --- Form Input Generic untuk mengurangi duplikasi ---
+const FormInput = ({ id, label, value, onChange, type = "text", required = false, placeholder = "" }) => (
+    <div>
+        <label htmlFor={id} className="block text-sm font-medium text-gray-600 mb-1">
+            {label} {required && <span className="text-red-500">*</span>}
+        </label>
+        <input
+            id={id} name={id} type={type} placeholder={placeholder || `Masukkan ${label.toLowerCase()}...`}
+            value={value || ""} onChange={onChange} required={required}
+            className="border border-gray-300 rounded-lg p-2 w-full focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
+        />
+    </div>
+);
+
+const FormTextarea = ({ id, label, value, onChange, rows = 3, placeholder = "" }) => (
+    <div className="md:col-span-2">
+        <label htmlFor={id} className="block text-sm font-medium text-gray-600 mb-1">{label}</label>
+        <textarea
+            id={id} name={id} value={value || ""} onChange={onChange} rows={rows}
+            placeholder={placeholder || `Masukkan ${label.toLowerCase()}...`}
+            className="border border-gray-300 rounded-lg p-2 w-full focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
+        />
+    </div>
+);
+
+const FormSelect = ({ id, label, value, onChange, options }) => (
+    <div>
+        <label htmlFor={id} className="block text-sm font-medium text-gray-600 mb-1">{label}</label>
+        <select
+            id={id} name={id} value={value} onChange={onChange}
+            className="border border-gray-300 rounded-lg p-2 w-full focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
+        >
+            {options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+        </select>
+    </div>
+);
+
+
+// --- AddProductForm diperbarui untuk semua fields ---
 const AddProductForm = ({ onAddProduct }) => {
-  const initialFormState = {
-    nama_obat: "",
-    deskripsi: "",
-    dosis: "",
-    harga_satuan: "",
-    harga_grosir: "",
-    stok: "",
-    kategori: "Obat Bebas",
-    foto: "",
-  };
-  const [newProduct, setNewProduct] = useState(initialFormState);
+  const [newProduct, setNewProduct] = useState(INITIAL_PRODUCT_STATE);
+  const [showAllFields, setShowAllFields] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -121,178 +164,91 @@ const AddProductForm = ({ onAddProduct }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!newProduct.nama_obat || !newProduct.harga_satuan || !newProduct.stok) {
-      toast.error("Nama Obat, Harga Satuan, dan Stok wajib diisi!");
+
+    if (!newProduct.nama_obat.trim() || !newProduct.harga_satuan || !newProduct.stok || !newProduct.satuan.trim()) {
+      toast.error("Nama Obat, Harga, Stok, dan Satuan wajib diisi!");
       return;
     }
-    const payload = {
-      ...newProduct,
-      harga_satuan:
-        parseInt(String(newProduct.harga_satuan).replace(/\D/g, "")) || 0,
-      harga_grosir:
-        parseInt(String(newProduct.harga_grosir).replace(/\D/g, "")) || 0,
-      stok: parseInt(String(newProduct.stok).replace(/\D/g, "")) || 0,
-    };
-    onAddProduct(payload);
-    setNewProduct(initialFormState);
+
+    const sanitizedPayload = { ...newProduct };
+
+    for (const key in sanitizedPayload) {
+      const value = sanitizedPayload[key];
+      if (typeof value === 'string') {
+        sanitizedPayload[key] = value.trim();
+      }
+    }
+
+    sanitizedPayload.harga_satuan = parseInt(String(sanitizedPayload.harga_satuan).replace(/\D/g, ""), 10) || 0;
+    sanitizedPayload.harga_grosir = parseInt(String(sanitizedPayload.harga_grosir).replace(/\D/g, ""), 10) || 0;
+    sanitizedPayload.stok = parseInt(String(sanitizedPayload.stok).replace(/\D/g, ""), 10) || 0;
+    
+    const requiredFields = ['nama_obat', 'harga_satuan', 'stok', 'satuan', 'kategori', 'golongan_obat'];
+    for (const key in sanitizedPayload) {
+        if (!requiredFields.includes(key) && sanitizedPayload[key] === "") {
+            sanitizedPayload[key] = null;
+        }
+    }
+
+    onAddProduct(sanitizedPayload);
+    setNewProduct(INITIAL_PRODUCT_STATE);
+    setShowAllFields(false);
   };
 
   return (
     <div className="bg-white shadow-md rounded-lg p-6 mb-8">
-      <h2 className="text-2xl font-semibold mb-4 text-gray-700">
-        Tambah Obat Baru
-      </h2>
-      <form
-        onSubmit={handleSubmit}
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
-      >
+      <h2 className="text-2xl font-semibold mb-4 text-gray-700">Tambah Obat Baru</h2>
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="lg:col-span-2">
-          <label
-            htmlFor="nama_obat"
-            className="block text-sm font-medium text-gray-600 mb-1"
-          >
-            Nama Obat <span className="text-red-500">*</span>
-          </label>
-          <input
-            id="nama_obat"
-            name="nama_obat"
-            type="text"
-            placeholder="Contoh: Paracetamol 500mg"
-            value={newProduct.nama_obat}
-            onChange={handleChange}
-            required
-            className="border border-gray-300 rounded-lg p-2 w-full focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
-          />
+            <FormInput id="nama_obat" label="Nama Obat" value={newProduct.nama_obat} onChange={handleChange} required placeholder="Contoh: Paracetamol 500mg" />
         </div>
-        <div>
-          <label
-            htmlFor="kategori"
-            className="block text-sm font-medium text-gray-600 mb-1"
-          >
-            Kategori
-          </label>
-          <select
-            id="kategori"
-            name="kategori"
-            value={newProduct.kategori}
-            onChange={handleChange}
-            className="border border-gray-300 rounded-lg p-2 w-full focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
-          >
-            {KATEGORI_OBAT.slice(1).map((k) => (
-              <option key={k} value={k}>
-                {k}
-              </option>
-            ))}
-          </select>
+        <FormInput id="harga_satuan" label="Harga Satuan" value={newProduct.harga_satuan} onChange={handleChange} type="number" required placeholder="Contoh: 5000" />
+        <FormInput id="harga_grosir" label="Harga Grosir (Opsional)" value={newProduct.harga_grosir} onChange={handleChange} type="number" placeholder="Contoh: 4500" />
+        <FormInput id="stok" label="Stok" value={newProduct.stok} onChange={handleChange} type="number" required placeholder="Contoh: 100" />
+        <FormInput id="satuan" label="Satuan" value={newProduct.satuan} onChange={handleChange} required placeholder="Contoh: Tablet / Botol" />
+        <FormSelect id="kategori" label="Kategori" value={newProduct.kategori} onChange={handleChange} options={KATEGORI_OBAT.slice(1)} />
+        <FormSelect id="golongan_obat" label="Golongan Obat" value={newProduct.golongan_obat} onChange={handleChange} options={GOLONGAN_OBAT} />
+        <div className="lg:col-span-2">
+           <FormInput id="foto" label="URL Foto" value={newProduct.foto} onChange={handleChange} type="url" placeholder="https://example.com/image.jpg" />
         </div>
-        <div>
-          <label
-            htmlFor="dosis"
-            className="block text-sm font-medium text-gray-600 mb-1"
-          >
-            Dosis
-          </label>
-          <input
-            id="dosis"
-            name="dosis"
-            type="text"
-            placeholder="Contoh: 3x sehari"
-            value={newProduct.dosis}
-            onChange={handleChange}
-            className="border border-gray-300 rounded-lg p-2 w-full focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
-          />
-        </div>
-        <div>
-          <label
-            htmlFor="harga_satuan"
-            className="block text-sm font-medium text-gray-600 mb-1"
-          >
-            Harga Satuan <span className="text-red-500">*</span>
-          </label>
-          <input
-            id="harga_satuan"
-            name="harga_satuan"
-            type="number"
-            placeholder="Contoh: 5000"
-            value={newProduct.harga_satuan}
-            onChange={handleChange}
-            required
-            className="border border-gray-300 rounded-lg p-2 w-full focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
-          />
-        </div>
-        <div>
-          <label
-            htmlFor="harga_grosir"
-            className="block text-sm font-medium text-gray-600 mb-1"
-          >
-            Harga Grosir
-          </label>
-          <input
-            id="harga_grosir"
-            name="harga_grosir"
-            type="number"
-            placeholder="Contoh: 4500"
-            value={newProduct.harga_grosir}
-            onChange={handleChange}
-            className="border border-gray-300 rounded-lg p-2 w-full focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
-          />
-        </div>
-        <div>
-          <label
-            htmlFor="stok"
-            className="block text-sm font-medium text-gray-600 mb-1"
-          >
-            Stok <span className="text-red-500">*</span>
-          </label>
-          <input
-            id="stok"
-            name="stok"
-            type="number"
-            placeholder="Contoh: 100"
-            value={newProduct.stok}
-            onChange={handleChange}
-            required
-            className="border border-gray-300 rounded-lg p-2 w-full focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
-          />
-        </div>
-        <div>
-          <label
-            htmlFor="foto"
-            className="block text-sm font-medium text-gray-600 mb-1"
-          >
-            URL Foto
-          </label>
-          <input
-            id="foto"
-            name="foto"
-            type="url"
-            placeholder="https://example.com/image.jpg"
-            value={newProduct.foto}
-            onChange={handleChange}
-            className="border border-gray-300 rounded-lg p-2 w-full focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
-          />
-        </div>
-        <div className="md:col-span-2 lg:col-span-4">
-          <label
-            htmlFor="deskripsi"
-            className="block text-sm font-medium text-gray-600 mb-1"
-          >
-            Deskripsi
-          </label>
-          <textarea
-            id="deskripsi"
-            name="deskripsi"
-            placeholder="Deskripsi singkat mengenai obat..."
-            value={newProduct.deskripsi}
-            onChange={handleChange}
-            rows="2"
-            className="border border-gray-300 rounded-lg p-2 w-full focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
-          />
-        </div>
-        <button
-          type="submit"
-          className="col-span-full mt-2 bg-blue-600 text-white py-2.5 rounded-lg shadow hover:bg-blue-700 transition-colors duration-300 font-semibold"
-        >
+
+        {!showAllFields && (
+            <div className="col-span-full text-center mt-2">
+                <button type="button" onClick={() => setShowAllFields(true)} className="text-blue-600 hover:underline font-medium">
+                    Tampilkan Detail Lengkap...
+                </button>
+            </div>
+        )}
+
+        <AnimatePresence>
+        {showAllFields && (
+            <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="col-span-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+            >
+                <FormTextarea id="deskripsi" label="Deskripsi" value={newProduct.deskripsi} onChange={handleChange} />
+                <FormTextarea id="manfaat" label="Manfaat" value={newProduct.manfaat} onChange={handleChange} />
+                <FormTextarea id="komposisi" label="Komposisi" value={newProduct.komposisi} onChange={handleChange} />
+                <FormTextarea id="perhatian" label="Perhatian" value={newProduct.perhatian} onChange={handleChange} />
+                <FormTextarea id="efek_samping" label="Efek Samping" value={newProduct.efek_samping} onChange={handleChange} />
+                <FormTextarea id="referensi" label="Referensi" value={newProduct.referensi} onChange={handleChange} />
+
+                <FormInput id="dosis" label="Dosis" value={newProduct.dosis} onChange={handleChange} placeholder="3x sehari 1 tablet"/>
+                <FormInput id="penyajian" label="Aturan Pakai / Penyajian" value={newProduct.penyajian} onChange={handleChange} placeholder="Sesudah makan"/>
+                <FormInput id="cara_penyimpanan" label="Cara Penyimpanan" value={newProduct.cara_penyimpanan} onChange={handleChange} placeholder="Simpan di tempat sejuk"/>
+                <FormInput id="kemasan" label="Kemasan" value={newProduct.kemasan} onChange={handleChange} placeholder="1 Strip @ 10 Tablet"/>
+                <FormInput id="nomor_izin_edar" label="Nomor Izin Edar (NIE)" value={newProduct.nomor_izin_edar} onChange={handleChange} />
+                <FormInput id="nama_standar_mims" label="Nama Standar MIMS" value={newProduct.nama_standar_mims} onChange={handleChange} />
+                <div className="md:col-span-2">
+                    <FormInput id="keterangan" label="Keterangan Tambahan" value={newProduct.keterangan} onChange={handleChange} />
+                </div>
+            </motion.div>
+        )}
+        </AnimatePresence>
+
+        <button type="submit" className="col-span-full mt-2 bg-blue-600 text-white py-2.5 rounded-lg shadow hover:bg-blue-700 transition-colors duration-300 font-semibold">
           Tambah Obat
         </button>
       </form>
@@ -300,83 +256,57 @@ const AddProductForm = ({ onAddProduct }) => {
   );
 };
 
+
 const ProductCard = ({ product, onEdit, onDelete, onUpdateStock }) => {
   const handleStockChange = (delta) => {
     const payload = {
-      nama_obat: product.name,
-      deskripsi: product.description,
-      dosis: product.dosis,
-      harga_satuan: product.price,
-      harga_grosir: product.harga_grosir,
-      stok: Math.max(0, product.stock + delta),
-      kategori: product.kategori,
-      foto: product.foto,
+      ...product,
+      stok: Math.max(0, product.stok + delta),
     };
+    delete payload.id; 
     onUpdateStock(product.id, payload);
   };
 
   return (
     <motion.div
-      layout
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.3 }}
+      layout initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }}
       className="bg-white rounded-xl shadow-lg overflow-hidden flex flex-col transition-shadow hover:shadow-2xl"
     >
       <img
-        src={
-          product.foto ||
-          "https://via.placeholder.com/400x300.png/E2E8F0/4A5568?text=No+Image"
-        }
-        alt={product.name}
+        src={product.foto || "https://placehold.co/400x300/EEE/31343C?text=No+Image"}
+        alt={product.nama_obat}
         className="w-full h-40 object-cover"
+        onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/400x300/EEE/31343C?text=Error"; }}
       />
       <div className="p-4 flex flex-col flex-grow">
-        <span
-          className={`text-xs font-semibold px-2 py-1 rounded-full self-start mb-2 ${
-            product.kategori === "Obat Resep"
-              ? "bg-red-100 text-red-800"
-              : "bg-blue-100 text-blue-800"
-          }`}
-        >
-          {product.kategori}
+        <span className={`text-xs font-semibold px-2 py-1 rounded-full self-start mb-2 ${
+            product.kategori === "Obat Keras" ? "bg-red-100 text-red-800" : "bg-blue-100 text-blue-800"
+        }`}>
+          {product.kategori || "Tidak ada kategori"}
         </span>
-        <h3 className="text-lg font-bold text-gray-800 line-clamp-2">
-          {product.name}
-        </h3>
+        <h3 className="text-lg font-bold text-gray-800 line-clamp-2">{product.nama_obat}</h3>
         <p className="text-gray-600 text-sm mt-1 flex-grow line-clamp-3">
-          {product.description || "Tidak ada deskripsi."}
+          {product.deskripsi || "Tidak ada deskripsi."}
         </p>
         <div className="mt-4">
           <p className="text-xl font-black text-green-600">
-            Rp {product.price.toLocaleString("id-ID")}
+            Rp {product.harga_satuan.toLocaleString("id-ID")}
           </p>
           <div className="flex items-center justify-between mt-2 text-sm text-gray-500">
             <span className="font-semibold">Stok:</span>
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => handleStockChange(-1)}
-                disabled={product.stock <= 0}
-                className="text-red-500 disabled:text-gray-300 hover:text-red-700 transition-colors"
-              >
+              <button onClick={() => handleStockChange(-1)} disabled={product.stok <= 0} className="text-red-500 disabled:text-gray-300 hover:text-red-700 transition-colors">
                 <FiMinusCircle size={20} />
               </button>
-              <span
-                className={`font-bold text-lg ${
-                  product.stock < 10 && product.stock > 0
-                    ? "text-orange-500"
-                    : product.stock === 0
-                    ? "text-red-600"
-                    : "text-gray-700"
-                }`}
-              >
-                {product.stock}
+              <span className={`font-bold text-lg ${
+                  product.stok < 10 && product.stok > 0 ? "text-orange-500"
+                  : product.stok === 0 ? "text-red-600"
+                  : "text-gray-700"
+              }`}>
+                {product.stok} <span className="text-xs font-normal">{product.satuan}</span>
               </span>
-              <button
-                onClick={() => handleStockChange(1)}
-                className="text-green-500 hover:text-green-700 transition-colors"
-              >
+              <button onClick={() => handleStockChange(1)} className="text-green-500 hover:text-green-700 transition-colors">
                 <FiPlusCircle size={20} />
               </button>
             </div>
@@ -384,18 +314,10 @@ const ProductCard = ({ product, onEdit, onDelete, onUpdateStock }) => {
         </div>
       </div>
       <div className="bg-gray-50 p-3 flex justify-end gap-2 border-t">
-        <button
-          onClick={() => onEdit(product)}
-          className="p-2 text-yellow-600 hover:bg-yellow-100 rounded-full transition-colors"
-          title="Edit Produk"
-        >
+        <button onClick={() => onEdit(product)} className="p-2 text-yellow-600 hover:bg-yellow-100 rounded-full transition-colors" title="Edit Produk">
           <FiEdit size={18} />
         </button>
-        <button
-          onClick={() => onDelete(product.id)}
-          className="p-2 text-red-600 hover:bg-red-100 rounded-full transition-colors"
-          title="Hapus Produk"
-        >
+        <button onClick={() => onDelete(product.id)} className="p-2 text-red-600 hover:bg-red-100 rounded-full transition-colors" title="Hapus Produk">
           <FiTrash2 size={18} />
         </button>
       </div>
@@ -404,44 +326,28 @@ const ProductCard = ({ product, onEdit, onDelete, onUpdateStock }) => {
 };
 
 const ProductList = ({ products, onEdit, onDelete, onUpdateStock }) => {
-  if (products.length === 0) {
+    if (products.length === 0) {
+      return (
+        <div className="text-center py-16 text-gray-500 bg-white rounded-lg shadow-md">
+          <h3 className="text-xl font-semibold">Produk Tidak Ditemukan</h3>
+          <p className="mt-2">Coba ubah kata kunci pencarian atau filter kategori Anda.</p>
+        </div>
+      );
+    }
     return (
-      <div className="text-center py-16 text-gray-500 bg-white rounded-lg shadow-md">
-        <h3 className="text-xl font-semibold">Produk Tidak Ditemukan</h3>
-        <p className="mt-2">
-          Coba ubah kata kunci pencarian atau filter kategori Anda.
-        </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <AnimatePresence>
+          {products.map((product) => (
+            <ProductCard key={product.id} product={product} onEdit={onEdit} onDelete={onDelete} onUpdateStock={onUpdateStock} />
+          ))}
+        </AnimatePresence>
       </div>
     );
-  }
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      <AnimatePresence>
-        {products.map((product) => (
-          <ProductCard
-            key={product.id}
-            product={product}
-            onEdit={onEdit}
-            onDelete={onDelete}
-            onUpdateStock={onUpdateStock}
-          />
-        ))}
-      </AnimatePresence>
-    </div>
-  );
-};
+  };
+
 
 const EditProductModal = ({ product, onClose, onSave }) => {
-  const [editedProduct, setEditedProduct] = useState({
-    nama_obat: product.name,
-    deskripsi: product.description,
-    dosis: product.dosis,
-    harga_satuan: product.price,
-    harga_grosir: product.harga_grosir,
-    stok: product.stock,
-    kategori: product.kategori,
-    foto: product.foto,
-  });
+  const [editedProduct, setEditedProduct] = useState({ ...INITIAL_PRODUCT_STATE, ...product });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -452,105 +358,64 @@ const EditProductModal = ({ product, onClose, onSave }) => {
     e.preventDefault();
     const payload = {
       ...editedProduct,
-      harga_satuan:
-        parseInt(String(editedProduct.harga_satuan).replace(/\D/g, "")) || 0,
-      harga_grosir:
-        parseInt(String(editedProduct.harga_grosir).replace(/\D/g, "")) || 0,
-      stok: parseInt(String(editedProduct.stok).replace(/\D/g, "")) || 0,
+      harga_satuan: parseInt(String(editedProduct.harga_satuan).replace(/\D/g, ""), 10) || 0,
+      harga_grosir: parseInt(String(editedProduct.harga_grosir).replace(/\D/g, ""), 10) || 0,
+      stok: parseInt(String(editedProduct.stok).replace(/\D/g, ""), 10) || 0,
     };
+    delete payload.id;
     onSave(product.id, payload);
   };
 
   return (
     <AnimatePresence>
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm p-4"
         onClick={onClose}
       >
         <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.9, opacity: 0 }}
-          transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          className="bg-white p-6 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+          initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.9, opacity: 0 }} transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          className="bg-white p-6 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
-          <h2 className="text-2xl font-semibold mb-6">
-            Edit Produk: <span className="font-bold">{product.name}</span>
-          </h2>
-          <form
-            onSubmit={handleSubmit}
-            className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-5"
-          >
-            {Object.keys(editedProduct).map((key) => (
-              <div
-                key={key}
-                className={key === "deskripsi" ? "md:col-span-2" : ""}
-              >
-                <label
-                  htmlFor={`edit-${key}`}
-                  className="block text-sm font-medium text-gray-700 capitalize mb-1"
-                >
-                  {key.replace(/_/g, " ")}
-                </label>
-                {key === "kategori" ? (
-                  <select
-                    id={`edit-${key}`}
-                    name={key}
-                    value={editedProduct[key]}
-                    onChange={handleChange}
-                    className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    {KATEGORI_OBAT.slice(1).map((k) => (
-                      <option key={k} value={k}>
-                        {k}
-                      </option>
-                    ))}
-                  </select>
-                ) : key === "deskripsi" ? (
-                  <textarea
-                    id={`edit-${key}`}
-                    name={key}
-                    value={editedProduct[key] || ""}
-                    onChange={handleChange}
-                    rows="3"
-                    className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                  />
-                ) : (
-                  <input
-                    type={
-                      key.includes("harga") || key === "stok"
-                        ? "number"
-                        : key === "foto"
-                        ? "url"
-                        : "text"
-                    }
-                    id={`edit-${key}`}
-                    name={key}
-                    value={editedProduct[key] || ""}
-                    onChange={handleChange}
-                    className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                  />
-                )}
-              </div>
-            ))}
+          <h2 className="text-2xl font-semibold mb-6">Edit Produk: <span className="font-bold">{product.nama_obat}</span></h2>
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="lg:col-span-2">
+                <FormInput id="nama_obat" label="Nama Obat" value={editedProduct.nama_obat} onChange={handleChange} required />
+            </div>
+            <FormInput id="harga_satuan" label="Harga Satuan" value={editedProduct.harga_satuan} onChange={handleChange} type="number" required />
+            <FormInput id="harga_grosir" label="Harga Grosir" value={editedProduct.harga_grosir || ''} onChange={handleChange} type="number" />
+            <FormInput id="stok" label="Stok" value={editedProduct.stok} onChange={handleChange} type="number" required />
+            <FormInput id="satuan" label="Satuan" value={editedProduct.satuan} onChange={handleChange} required />
+            <FormSelect id="kategori" label="Kategori" value={editedProduct.kategori} onChange={handleChange} options={KATEGORI_OBAT.slice(1)} />
+            <FormSelect id="golongan_obat" label="Golongan Obat" value={editedProduct.golongan_obat} onChange={handleChange} options={GOLONGAN_OBAT} />
+            <div className="lg:col-span-2">
+                <FormInput id="foto" label="URL Foto" value={editedProduct.foto} onChange={handleChange} type="url" />
+            </div>
+
+            <hr className="col-span-full my-2"/>
+
+            <FormTextarea id="deskripsi" label="Deskripsi" value={editedProduct.deskripsi} onChange={handleChange} />
+            <FormTextarea id="manfaat" label="Manfaat" value={editedProduct.manfaat} onChange={handleChange} />
+            <FormTextarea id="komposisi" label="Komposisi" value={editedProduct.komposisi} onChange={handleChange} />
+            <FormTextarea id="perhatian" label="Perhatian" value={editedProduct.perhatian} onChange={handleChange} />
+            <FormTextarea id="efek_samping" label="Efek Samping" value={editedProduct.efek_samping} onChange={handleChange} />
+            <FormTextarea id="referensi" label="Referensi" value={editedProduct.referensi} onChange={handleChange} />
+            
+            <FormInput id="dosis" label="Dosis" value={editedProduct.dosis} onChange={handleChange} />
+            <FormInput id="penyajian" label="Penyajian" value={editedProduct.penyajian} onChange={handleChange} />
+            <FormInput id="cara_penyimpanan" label="Cara Penyimpanan" value={editedProduct.cara_penyimpanan} onChange={handleChange} />
+            <FormInput id="kemasan" label="Kemasan" value={editedProduct.kemasan} onChange={handleChange} />
+            <FormInput id="nomor_izin_edar" label="Nomor Izin Edar" value={editedProduct.nomor_izin_edar} onChange={handleChange} />
+            <FormInput id="nama_standar_mims" label="Nama Standar MIMS" value={editedProduct.nama_standar_mims} onChange={handleChange} />
+            <div className="md:col-span-2">
+                <FormInput id="keterangan" label="Keterangan Tambahan" value={editedProduct.keterangan} onChange={handleChange} />
+            </div>
+            
             <div className="col-span-full flex justify-end gap-3 mt-6">
-              <button
-                type="button"
-                onClick={onClose}
-                className="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 font-semibold transition-colors"
-              >
-                Batal
-              </button>
-              <button
-                type="submit"
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-semibold transition-colors"
-              >
-                Simpan Perubahan
-              </button>
+              <button type="button" onClick={onClose} className="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 font-semibold transition-colors">Batal</button>
+              <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-semibold transition-colors">Simpan Perubahan</button>
             </div>
           </form>
         </motion.div>
@@ -559,7 +424,10 @@ const EditProductModal = ({ product, onClose, onSave }) => {
   );
 };
 
-// --- Komponen Utama Halaman Produk (Main Component) ---
+
+// =================================================================================
+// KOMPONEN UTAMA HALAMAN PRODUK
+// =================================================================================
 const ProductManagementContent = () => {
   const [products, setProducts] = useState([]);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -579,14 +447,27 @@ const ProductManagementContent = () => {
       const data = await res.json();
       const mapped = data.map((item) => ({
         id: item.obat_id,
-        name: item.nama_obat,
-        description: item.deskripsi,
-        dosis: item.dosis,
-        price: parseInt(item.harga_satuan) || 0,
-        harga_grosir: parseInt(item.harga_grosir) || 0,
-        stock: parseInt(item.stok) || 0,
-        kategori: item.kategori,
+        nama_obat: item.nama_obat || "Nama Tidak Tersedia",
+        harga_satuan: parseInt(item.harga_satuan, 10) || 0,
+        harga_grosir: parseInt(item.harga_grosir, 10) || 0,
+        stok: parseInt(item.stok, 10) || 0,
         foto: item.foto,
+        satuan: item.satuan,
+        deskripsi: item.deskripsi,
+        komposisi: item.komposisi,
+        kemasan: item.kemasan,
+        manfaat: item.manfaat,
+        kategori: item.kategori,
+        dosis: item.dosis,
+        penyajian: item.penyajian,
+        cara_penyimpanan: item.cara_penyimpanan,
+        perhatian: item.perhatian,
+        efek_samping: item.efek_samping,
+        nama_standar_mims: item.nama_standar_mims,
+        nomor_izin_edar: item.nomor_izin_edar,
+        golongan_obat: item.golongan_obat,
+        keterangan: item.keterangan,
+        referensi: item.referensi,
       }));
       setProducts(mapped);
     } catch (err) {
@@ -605,7 +486,9 @@ const ProductManagementContent = () => {
       await fetchProducts();
     } catch (error) {
       console.error(error);
-      toast.error(error.message || errorMessage, { id: toastId });
+      const errResponse = await error.response?.json();
+      const message = errResponse?.message || error.message || errorMessage;
+      toast.error(message, { id: toastId });
     }
   };
 
@@ -658,9 +541,7 @@ const ProductManagementContent = () => {
                 toast.dismiss(t.id);
                 handleApiCall(
                   async () => {
-                    const response = await fetch(`${API_URL}/${id}`, {
-                      method: "DELETE",
-                    });
+                    const response = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
                     if (!response.ok) throw new Error("Gagal menghapus produk");
                   },
                   "Produk berhasil dihapus!",
@@ -687,26 +568,19 @@ const ProductManagementContent = () => {
   const filteredProducts = useMemo(() => {
     return products
       .filter((product) =>
-        product.name.toLowerCase().includes(searchTerm.toLowerCase())
+        product.nama_obat.toLowerCase().includes(searchTerm.toLowerCase())
       )
       .filter((product) =>
-        filterCategory === "Semua Kategori"
-          ? true
-          : product.kategori === filterCategory
+        filterCategory === "Semua Kategori" ? true : product.kategori === filterCategory
       );
   }, [products, searchTerm, filterCategory]);
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-screen-2xl mx-auto">
       <Toaster position="top-center" reverseOrder={false} />
       <header className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-800">
-          Manajemen Produk
-        </h1>
-        <a
-          href="/stok-opname"
-          className="bg-green-600 text-white px-5 py-2 rounded-lg shadow-md hover:bg-green-700 transition-all duration-300 font-semibold"
-        >
+        <h1 className="text-3xl md:text-4xl font-bold text-gray-800">Manajemen Produk</h1>
+        <a href="/stok-opname" className="bg-green-600 text-white px-5 py-2 rounded-lg shadow-md hover:bg-green-700 transition-all duration-300 font-semibold">
           Stok Opname
         </a>
       </header>
@@ -717,53 +591,34 @@ const ProductManagementContent = () => {
         <div className="relative w-full md:w-1/2">
           <FaSearch className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400" />
           <input
-            type="text"
-            placeholder="Cari nama obat..."
-            value={searchTerm}
+            type="text" placeholder="Cari nama obat..." value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="border border-gray-300 rounded-lg p-2 pl-10 w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition"
           />
         </div>
         <select
-          value={filterCategory}
-          onChange={(e) => setFilterCategory(e.target.value)}
+          value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}
           className="border border-gray-300 rounded-lg p-2 w-full md:w-1/2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition"
         >
-          {KATEGORI_OBAT.map((k) => (
-            <option key={k} value={k}>
-              {k}
-            </option>
-          ))}
+          {KATEGORI_OBAT.map((k) => <option key={k} value={k}>{k}</option>)}
         </select>
       </div>
 
       {loading ? (
         <LoadingSpinner />
       ) : (
-        <ProductList
-          products={filteredProducts}
-          onEdit={setEditingProduct}
-          onDelete={deleteProduct}
-          onUpdateStock={updateProduct}
-        />
+        <ProductList products={filteredProducts} onEdit={setEditingProduct} onDelete={deleteProduct} onUpdateStock={updateProduct} />
       )}
       {editingProduct && (
-        <EditProductModal
-          product={editingProduct}
-          onClose={() => setEditingProduct(null)}
-          onSave={updateProduct}
-        />
+        <EditProductModal product={editingProduct} onClose={() => setEditingProduct(null)} onSave={updateProduct} />
       )}
     </div>
   );
 };
 
 // =================================================================================
-// KOMPONEN EXPORT UTAMA (MAIN EXPORTED COMPONENT)
+// KOMPONEN EXPORT UTAMA
 // =================================================================================
-// Ini adalah komponen yang akan Anda ekspor dan gunakan di router Anda.
-// Ia menggunakan Layout untuk membungkus konten manajemen produk.
-
 const ProductManagementPage = () => {
   return (
     <Layout activePage="Produk">
