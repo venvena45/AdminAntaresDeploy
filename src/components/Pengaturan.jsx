@@ -189,7 +189,7 @@ const AdminManagement = () => {
   const [updatingUserId, setUpdatingUserId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const API_BASE_URL = "https://antaresapi-production.up.railway.app/api";
+  const API_BASE_URL = "https://antaresapi-production-006d.up.railway.app/api";
 
   const fetchUsers = async () => {
     setLoading(true);

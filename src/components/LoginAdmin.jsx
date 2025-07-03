@@ -8,7 +8,7 @@ export default function LoginAdmin() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const API_URL = "https://antaresapi-production.up.railway.app/api/auth/login";
+  const API_URL = "https://antaresapi-production-006d.up.railway.app/api/auth/login";
 
   useEffect(() => {
     const isLoggedIn = localStorage.getItem("isLoggedIn");

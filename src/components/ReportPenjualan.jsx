@@ -70,7 +70,7 @@ const Layout = ({ children, activePage }) => {
 // =================================================================================
 // Ini adalah kode asli Anda, sekarang menjadi komponen konten.
 
-const API_BASE_URL = "https://antaresapi-production.up.railway.app/api";
+const API_BASE_URL = "https://antaresapi-production-006d.up.railway.app/api";
 
 const getAllPesanan = async () => {
   const response = await fetch(`${API_BASE_URL}/pesanan`);

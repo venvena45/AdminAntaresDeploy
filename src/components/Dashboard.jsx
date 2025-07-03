@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 
 // --- Konstanta API ---
-const API_BASE_URL = "https://antaresapi-production.up.railway.app/api";
+const API_BASE_URL = "https://antaresapi-production-006d.up.railway.app/api";
 
 // --- Fungsi Helper untuk API ---
 
@@ -194,8 +194,7 @@ const Dashboard = () => {
       {/* Sidebar dengan efek glassmorphism */}
       <aside className="w-64 bg-white/80 backdrop-blur-lg border-r border-white/20 p-6 shadow-xl">
         <div className="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-10 text-center">
-          <div className="text-3xl mb-2">🏥</div>
-          Apotek ANTARES
+          <div className="text-3xl mb-2"><img src="logo-kecil.png" alt="" /></div>
         </div>
         <nav>
           <ul className="space-y-3">
@@ -254,13 +253,6 @@ const Dashboard = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-72 px-4 py-3 bg-white/80 backdrop-blur-sm border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 placeholder-gray-500"
               />
-            </div>
-
-            <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-4 rounded-xl text-white shadow-lg">
-              <div className="text-right">
-                <div className="font-bold text-lg">Yuzar</div>
-                <div className="text-sm opacity-90">Administrator</div>
-              </div>
             </div>
           </div>
         </header>
@@ -338,7 +330,7 @@ const Dashboard = () => {
         <section className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-white/20">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-              📋 Status Pemesanan Teratas
+              Status Pemesanan Teratas
             </h2>
             <button
               onClick={fetchData}

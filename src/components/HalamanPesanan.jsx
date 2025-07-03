@@ -58,7 +58,7 @@ const Layout = ({ children, activePage }) => {
 // Kode asli Anda untuk halaman pesanan, diubah menjadi komponen konten.
 
 // --- Konstanta API ---
-const API_BASE_URL = "https://antaresapi-production.up.railway.app/api";
+const API_BASE_URL = "https://antaresapi-production-006d.up.railway.app/api";
 
 // --- Fungsi Helper untuk API ---
 const getAllPesanan = async () => {
