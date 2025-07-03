@@ -194,7 +194,9 @@ const Dashboard = () => {
       {/* Sidebar dengan efek glassmorphism */}
       <aside className="w-64 bg-white/80 backdrop-blur-lg border-r border-white/20 p-6 shadow-xl">
         <div className="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-10 text-center">
-          <div className="text-3xl mb-2"><img src="logo-kecil.png" alt="" /></div>
+          <div className="text-3xl mb-2">
+            <img src="logo-kecil.png" alt="" />
+          </div>
         </div>
         <nav>
           <ul className="space-y-3">
