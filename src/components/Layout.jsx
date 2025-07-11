@@ -40,8 +40,7 @@ const Layout = () => {
       <aside className="w-64 bg-white shadow-lg flex-shrink-0">
         <div className="p-6 text-center border-b">
           <h1 className="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-            <span className="text-3xl block mb-2">🏥</span>
-            Apotek ANTARES
+            <img src="logo-kecil.png" alt="" />
           </h1>
         </div>
         <nav className="mt-4 px-4">

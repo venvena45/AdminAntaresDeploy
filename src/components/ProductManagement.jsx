@@ -75,8 +75,7 @@ const Layout = ({ children, activePage }) => {
     <div className="flex min-h-screen bg-gray-100">
       <aside className="w-64 bg-white/80 backdrop-blur-lg border-r border-white/20 p-6 shadow-xl flex-shrink-0">
         <div className="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-10 text-center">
-          <div className="text-3xl mb-2">🏥</div>
-          Apotek ANTARES
+          <img src="logo-kecil.png" alt="" />
         </div>
         <nav>
           <ul className="space-y-3">

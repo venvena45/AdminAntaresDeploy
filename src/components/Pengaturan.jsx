@@ -283,8 +283,7 @@ const AdminManagement = () => {
         {/* Header dengan Logo */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 text-4xl font-bold bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent mb-2">
-            <span className="text-emerald-500">⚕️</span>
-            <span>APOTEK ANTARES</span>
+            <img src="logo-kecil.png" alt="" />
           </div>
           <p className="text-gray-600">Sistem Manajemen Administrator</p>
         </div>
