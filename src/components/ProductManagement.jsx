@@ -22,7 +22,7 @@ const KATEGORI_OBAT = [
   "Obat Bebas",
   "Obat Herbal",
   "Vitamin & Suplemen",
-  "Perawatan Pribadi",
+  "Skincare",
 ];
 
 const GOLONGAN_OBAT = [
