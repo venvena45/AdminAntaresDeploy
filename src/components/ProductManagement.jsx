@@ -12,7 +12,7 @@ import {
 // =================================================================================
 // KONSTANTA & API
 // =================================================================================
-const API_BASE_URL = "https://antaresapi-production-006d.up.railway.app/api";
+const API_BASE_URL = "https://apotekantares.my.id/api";
 const API_URL = `${API_BASE_URL}/obat`;
 
 const KATEGORI_OBAT = [
