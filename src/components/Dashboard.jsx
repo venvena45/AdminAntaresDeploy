@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 
 // --- Konstanta API ---
-const API_BASE_URL = "https://antaresapi-production-006d.up.railway.app/api";
+const API_BASE_URL = "https://apotekantares.my.id/api";
 
 // --- Fungsi Helper untuk API ---
 
