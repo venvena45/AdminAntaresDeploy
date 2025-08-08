@@ -417,14 +417,15 @@ const PesananContent = () => {
                     </div>
                     <div className="text-xs text-gray-500">{item.tanggal}</div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-6 py-4 align-top max-w-[200px]">
                     <div className="text-sm font-medium text-gray-900">
                       {item.namaPembeli}
                     </div>
-                    <div className="text-xs text-gray-600 break-words max-w-xs">
+                    <div className="text-xs text-gray-600 break-words">
                       {item.alamat}
                     </div>
                   </td>
+
                   <td className="px-6 py-4">
                     <ul className="list-disc pl-5 space-y-1 text-sm text-gray-800">
                       {item.obat.length > 0 ? (
