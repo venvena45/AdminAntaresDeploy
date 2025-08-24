@@ -494,7 +494,7 @@ const ProductManagementContent = () => {
   const addProduct = async (newProduct) => {
     await handleApiCall(
       async () => {
-        const response = await fetch(API_URL, {
+        const response = await fetch(`${API_BASE_URL}/obat`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(newProduct),
