@@ -82,7 +82,7 @@ const getDetailPesananById = async (pesananId) => {
     return [];
   }
   const data = await response.json();
-  return Array.isArray(data) ? data : data.data || [];
+  return Array.isArray(data) ? data : [];
 };
 
 const getAllObat = async () => {
