@@ -73,7 +73,7 @@ const getAllPesanan = async () => {
 const getDetailPesananById = async (pesananId) => {
   if (!pesananId) return [];
   const response = await fetch(
-    `${API_BASE_URL}/detail-pesanan/pesanan/${pesananId}`
+    `${API_BASE_URL}/detail-pesanan/${pesananId}`
   );
   if (!response.ok) {
     console.warn(
@@ -82,7 +82,7 @@ const getDetailPesananById = async (pesananId) => {
     return [];
   }
   const data = await response.json();
-  return Array.isArray(data) ? data : data.data || [];
+  return Array.isArray(data) ? data : [];
 };
 
 const getAllObat = async () => {
